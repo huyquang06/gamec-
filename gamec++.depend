@@ -1,0 +1,13 @@
+# depslib dependency file v1.0
+1744966920 source:c:\sdl\laptrinhcodeblock\gamec++\main.cpp
+	"CommonFunc.h"
+	<cmath>
+
+1744962857 c:\sdl\laptrinhcodeblock\gamec++\commonfunc.h
+	<iostream>
+	<SDL.h>
+	<SDL_image.h>
+	<fstream>
+	<sstream>
+	<cmath>
+
