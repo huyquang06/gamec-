@@ -1,4 +1,5 @@
 #include "CommonFunc.h"
+#include "Monster.h"
 #include <cmath>
 
 enum CharacterState {
@@ -24,25 +25,12 @@ void LoadTile(const char* filename, int map[MAP_HEIGHT][MAP_WIDTH]) {
     file.close();
 }
 
-bool is_solid(int tile) {
-    return tile == 1 || tile == 2;
-}
-
-float getGroundLevel(float charX, float charWidth, int frameHeight) {
-    int col = static_cast<int>((charX + charWidth / 2) / TILE_SIZE);
-    if (col < 0 || col >= MAP_WIDTH) return WINDOW_HEIGHT - frameHeight;
-
-    for (int row = 0; row < MAP_HEIGHT; ++row) {
-        if (is_solid(tileMap[row][col])) {
-            return row * TILE_SIZE - frameHeight;
-        }
-    }
-    return WINDOW_HEIGHT - frameHeight;
-}
-
 bool checkCollision_x(float new_x, float y, int frameWidth, int frameHeight) {
-    int left = static_cast<int>(new_x) / TILE_SIZE;
-    int right = static_cast<int>(new_x + frameWidth - 1) / TILE_SIZE;
+    float left_mar = new_x + COLLISION_MARGIN;
+    float right_mar = new_x + frameWidth - COLLISION_MARGIN - 1;
+
+    int left = static_cast<int>(left_mar) / TILE_SIZE;
+    int right = static_cast<int>(right_mar) / TILE_SIZE;
     int top = static_cast<int>(y) / TILE_SIZE;
     int bottom = static_cast<int>(y + frameHeight - 1) / TILE_SIZE;
 
@@ -66,6 +54,15 @@ bool checkCollision_y(float x, float new_y, int frameWidth, int frameHeight) {
             return true;
     }
     return false;
+}
+
+bool is_OnGround(float x, float y, int frameWidth, int frameHeight)  // kiem tra duoi chan nhan vat
+{
+    float feet_y = y + frameHeight + 1;
+    return checkCollision_y(x+1, feet_y, 1, 1) ||
+           checkCollision_y(x + frameWidth / 2, feet_y, 1, 1) ||
+           checkCollision_y(x + frameWidth - 2, feet_y, 1, 1);
+
 }
 
 float find_RespawnPoint(float fall_x)
@@ -102,12 +99,17 @@ int main(int argc, char* argv[]) {
     SDL_Texture* layer2 = IMG_LoadTexture(renderer, "image/background_layer_2.png");
     SDL_Texture* layer3 = IMG_LoadTexture(renderer, "image/background_layer_3.png");
     SDL_Texture* block1 = IMG_LoadTexture(renderer, "map/BLOCK_1.png");
-    SDL_Texture* block2 = IMG_LoadTexture(renderer, "map/BLOCK_2.png");
+    SDL_Texture* block2 = IMG_LoadTexture(renderer, "map/BLOCK_3.png");
     SDL_Texture* walkRTexture = IMG_LoadTexture(renderer, "image/RUN.png");
     SDL_Texture* walkLTexture = IMG_LoadTexture(renderer, "image/RUN_NGUOC.png");
     SDL_Texture* idleLTexture = IMG_LoadTexture(renderer, "image/IDLE_LEFT.png");
     SDL_Texture* idleRTexture = IMG_LoadTexture(renderer, "image/IDLE.png");
+    SDL_Texture* m_idleTexture = IMG_LoadTexture(renderer, "image/IDLE_MONSTER.png");
 
+    if (!m_idleTexture) {
+    printf("Failed to load monster texture: %s\n", IMG_GetError());
+    // Handle error
+}
     int textureWidth, textureHeight;
     SDL_QueryTexture(walkRTexture, NULL, NULL, &textureWidth, &textureHeight);
     int frameWidth = textureWidth / WALKING_FRAMES;
@@ -117,7 +119,15 @@ int main(int argc, char* argv[]) {
     SDL_QueryTexture(idleRTexture, NULL, NULL, &idleTextureWidth, &idleTextureHeight);
     int idleFrameWidth = idleTextureWidth / IDLE_FRAME;
     int idleFrameHeight = idleTextureHeight;
+    //lay kich thuoc cua monster
+    int m_idleWidth, m_idleHeight;
+    SDL_QueryTexture(m_idleTexture, NULL, NULL, &m_idleWidth, &m_idleHeight);
+    int m_width =  m_idleWidth / 4;
+    int m_height = m_idleHeight;
 
+    std::vector<SDL_FPoint> m_positions = Generate_Monsters(25, 300, 900, MAP_WIDTH * TILE_SIZE, m_width, m_height);
+    std::vector<Monster> monters = InitMonsters(renderer, "image/IDLE_MONSTER.png", 4, m_positions);
+    float velocity = 0.0f;  float gravity = 0.05f; float jumpForce = 3.0f; float speed = 1.5f;
     float x = 0.0f, y = getGroundLevel(0, frameWidth, frameHeight);
 
     bool moveLeft = false, moveRight = false, facingRight = true, isJumping = false;
@@ -150,12 +160,22 @@ int main(int argc, char* argv[]) {
         }
 
         if (moveLeft) {
-            new_x = x - speed;
+            float new_x = x - speed;
             if (!checkCollision_x(new_x, y, frameWidth, frameHeight)) x = new_x;
+            else
+            {
+                int left_tile = static_cast<int>((new_x + COLLISION_MARGIN) / TILE_SIZE);
+                x = (left_tile + 1) * TILE_SIZE - COLLISION_MARGIN;
+            }
         }
         if (moveRight) {
-            new_x = x + speed;
+            float new_x = x + speed;
             if (!checkCollision_x(new_x, y, frameWidth, frameHeight)) x = new_x;
+            else
+            {
+                int right_tile = static_cast<int>((new_x + frameWidth - COLLISION_MARGIN -1 ) / TILE_SIZE);
+                x = right_tile * TILE_SIZE - frameWidth + COLLISION_MARGIN;
+            }
         }
 
         if (x < 0) x = 0;
@@ -193,6 +213,10 @@ int main(int argc, char* argv[]) {
             velocity = 0;
         }
 
+        if(!isJumping && !is_OnGround(x,y,frameWidth, frameHeight))
+        {
+            isJumping = true;
+        }
         camera.x = (int)x + frameWidth / 2 - WINDOW_WIDTH / 2;
         camera.y = 0;
         if (camera.x < 0) camera.x = 0;
@@ -230,10 +254,11 @@ int main(int argc, char* argv[]) {
         SDL_QueryTexture(layer2, NULL, NULL, &bg2_width, &bg2_height);
         SDL_QueryTexture(layer3, NULL, NULL, &bg3_width, &bg3_height);
 
-        for (int i = -camera.x / 1.5; i < WINDOW_WIDTH + bg1_width; i += bg1_width) {
-    SDL_Rect dst = {(int)i, 0, bg1_width, WINDOW_HEIGHT};
-    SDL_RenderCopy(renderer, layer1, NULL, &dst);
-}
+        for (int i = -camera.x / 1.5; i < WINDOW_WIDTH + bg1_width; i += bg1_width)
+            {
+             SDL_Rect dst = {(int)i, 0, bg1_width, WINDOW_HEIGHT};
+             SDL_RenderCopy(renderer, layer1, NULL, &dst);
+            }
 
 for (int i = -camera.x / 1.2; i < WINDOW_WIDTH + bg2_width; i += bg2_width) {
     SDL_Rect dst = {(int)i, 0, bg2_width, WINDOW_HEIGHT};
@@ -261,7 +286,12 @@ for (int i = -camera.x; i < WINDOW_WIDTH + bg3_width; i += bg3_width) {
                                       (currentState == IDLE_LEFT) ? idleLTexture : idleRTexture;
 
         SDL_RenderCopy(renderer, currentTexture, &spriteClip, &charRect);
+
+        RenderMonsters(renderer, monters, camera);
+
         SDL_RenderPresent(renderer);
+
+
 
         Uint32 frameTime = SDL_GetTicks() - frameStart;
         if (frameTime < FRAME_DELAY) SDL_Delay(FRAME_DELAY - frameTime);
