@@ -5,17 +5,21 @@ bool is_solid(int tileID)
     return tileID == 1 || tileID == 2;
 }
 
-float getGroundLevel(float charX, float charWidth, int frameHeight)
+float getGroundLevel(float charX, float charWidth, int frameHeight, bool adjustForHeight)
 {
     int col = static_cast<int>((charX + charWidth / 2) / TILE_SIZE);
-    if(col < 0 || col >= MAP_WIDTH) return WINDOW_HEIGHT - frameHeight;
-
-    for(int row = 0; row < MAP_HEIGHT; ++row)
+    if (col < 0 || col >= MAP_WIDTH)
     {
-        if(is_solid(tileMap[row][col]))
+        return adjustForHeight ? WINDOW_HEIGHT - frameHeight : WINDOW_HEIGHT;
+    }
+
+    for (int row = 0; row < MAP_HEIGHT; ++row)
+    {
+        if (is_solid(tileMap[row][col]))
         {
-            return row * TILE_SIZE - frameHeight;
+            float groundY = row * TILE_SIZE;
+            return adjustForHeight ? groundY - frameHeight : groundY;
         }
     }
-    return WINDOW_HEIGHT - frameHeight;
+    return adjustForHeight ? WINDOW_HEIGHT - frameHeight : WINDOW_HEIGHT;
 }
