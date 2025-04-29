@@ -24,6 +24,7 @@ class Player
     bool isGameOver() const;
     int getRespawnCount() const;
     SDL_Rect GetBoundingBox() const;
+    void IncreaseRespawnCount();
 
 
 private:
@@ -50,8 +51,6 @@ private:
     SDL_Rect spriteClip;
     SDL_Rect charRect;
 
-
-
 private:
     void updateAnimation();
     bool checkCollision_x(float new_x, float y);
@@ -59,7 +58,5 @@ private:
     bool isOnGround();
     float find_RespawnPoint();
 };
-
-
 
 #endif // PLAYER_H_INCLUDED

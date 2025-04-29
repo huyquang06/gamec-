@@ -198,18 +198,20 @@ void Player::updateAnimation()
 
 void Player::Update(SDL_Rect& camera, std::vector<Monster>& monsters)
 {
-
-    if (isJumping)
+    if(currentState != ATTACK_LEFT && currentState != ATTACK_RIGHT)
+    {
+        if (isJumping)
     {
         currentState = facingRight ? IDLE_RIGHT : IDLE_LEFT;
         if (moveLeft) currentState = WALKING_LEFT;
         if (moveRight) currentState = WALKING_RIGHT;
     }
-    else if(currentState != ATTACK_LEFT && currentState != ATTACK_RIGHT)
+    else
     {
         currentState = moveLeft ? WALKING_LEFT :
                        moveRight ? WALKING_RIGHT :
                        facingRight ? IDLE_RIGHT : IDLE_LEFT;
+    }
     }
 
     if(moveLeft)
@@ -247,7 +249,7 @@ void Player::Update(SDL_Rect& camera, std::vector<Monster>& monsters)
     bool fall_down = new_y > WINDOW_HEIGHT;
     if(fall_down)
     {
-        respawnCount++;
+        IncreaseRespawnCount();
         if(respawnCount >= 3)
         {
             gameOver = true;
@@ -338,4 +340,20 @@ int Player::getRespawnCount() const
 SDL_Rect Player::GetBoundingBox() const
 {
     return {(int)x, (int)y, spriteClip.w, spriteClip.h};
+}
+
+void Player::IncreaseRespawnCount()
+{
+    respawnCount++;
+    if(respawnCount >= 3)
+    {
+        gameOver = true;
+    }
+    else
+    {
+        x = find_RespawnPoint();
+        y = getGroundLevel(x, frameWidth, frameHeight, true);
+        velocity = 0;
+        isJumping = false;
+    }
 }
