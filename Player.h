@@ -10,7 +10,7 @@ class Player
     public:
     enum CharacterState
 {
-    IDLE_RIGHT, IDLE_LEFT, WALKING_RIGHT, WALKING_LEFT, ATTACK_RIGHT, ATTACK_LEFT
+    IDLE_RIGHT, IDLE_LEFT, WALKING_RIGHT, WALKING_LEFT, ATTACK_RIGHT, ATTACK_LEFT, DEFEND_RIGHT, DEFEND_LEFT
 };
 
     Player(SDL_Renderer* renderer, float start_x, float start_y);
@@ -25,6 +25,8 @@ class Player
     int getRespawnCount() const;
     SDL_Rect GetBoundingBox() const;
     void IncreaseRespawnCount();
+    CharacterState getState() const {return currentState;}
+    void Respawn();
 
 
 private:
@@ -35,7 +37,8 @@ private:
     int frameWidth, frameHeight;
     int idleframeWidth, idleframeHeight;
     int attackFrameWidth, attackFrameHeight;
-    int walkingFrame, idleFrame, attackFrame;
+    int defendFrameWidth, defendFrameHeight;
+    int walkingFrame, idleFrame, attackFrame, defendFrame;
     int respawnCount;
     bool gameOver;
 
@@ -48,6 +51,8 @@ private:
     SDL_Texture* idleLTexture;
     SDL_Texture* attackRTexture;
     SDL_Texture* attackLTexture;
+    SDL_Texture* defendRTexture;
+    SDL_Texture* defendLTexture;
     SDL_Rect spriteClip;
     SDL_Rect charRect;
 

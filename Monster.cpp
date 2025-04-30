@@ -22,9 +22,20 @@ Fireball::Fireball(SDL_Renderer* renderer, float x, float y, float velocityX) : 
     }
 }
 
-void Fireball::Update()
+void Fireball::Update(const int map[MAP_HEIGHT][MAP_WIDTH])
 {
     x+= velocityX;  // di chuyen fireball theo huong
+
+    int row = static_cast<int>(y / TILE_SIZE);
+    int col = static_cast<int>(x / TILE_SIZE);
+
+    if(row >= 0 && row < MAP_HEIGHT && col >= 0 && col < MAP_WIDTH)
+    {
+        if(map[row][col] == 1 || map[row][col] == 2)
+        {
+            x = -1000;
+        }
+    }
 }
 
 void Fireball::Render(SDL_Renderer* renderder, SDL_Rect& camera)
@@ -43,9 +54,11 @@ bool Fireball::isOutOfBounds() const
     return x < 0 || x > MAP_WIDTH * TILE_SIZE;
 }
 
-Monster::Monster(SDL_Texture* idleTexture, SDL_Texture* attackTexture, int idleCount, int attackCount, SDL_Renderer* renderer)
+Monster::Monster(SDL_Texture* idleTexture, SDL_Texture* idleLeftTexture, SDL_Texture* attackTexture, SDL_Texture* attackLeftTexture, int idleCount, int attackCount, SDL_Renderer* renderer, const int map[MAP_HEIGHT][MAP_WIDTH])
     : m_idleTexture(idleTexture),
+      m_idleLeftTexture(idleLeftTexture),
       m_attackTexture(attackTexture),
+      m_attackLeftTexture(attackLeftTexture),
       m_idleCount(idleCount),
       m_attackCount(attackCount),
       position({0,0}),
@@ -53,9 +66,11 @@ Monster::Monster(SDL_Texture* idleTexture, SDL_Texture* attackTexture, int idleC
       mLastFrameTime(SDL_GetTicks()),
       mState(State::IDLE),
       fRenderer(renderer),
+      mMap(map),
       justAttack(false),
       hitCount(0),
-      markedForDeletion(false)
+      markedForDeletion(false),
+      facingRight(true)
 {
     int idleTexW, texH;
     SDL_QueryTexture(m_idleTexture, NULL, NULL, &idleTexW, &texH);
@@ -66,14 +81,16 @@ Monster::Monster(SDL_Texture* idleTexture, SDL_Texture* attackTexture, int idleC
     SDL_QueryTexture(m_attackTexture, NULL, NULL, &attackTexW, &texH);
     mA_FrameWidth = attackTexW / attackCount;
 
-    m_hurtTexture = IMG_LoadTexture(renderer, "image/HURT.png");
+    m_hurtTexture = IMG_LoadTexture(renderer, "image/HURT_RIGHT.png");
+    m_hurtLeftTexture = IMG_LoadTexture(renderer, "image/HURT.png");
     m_hurtCount = 4;
     int hurtTexW;
     SDL_QueryTexture(m_hurtTexture, NULL, NULL, &hurtTexW, &texH);
     mH_FrameWidth = hurtTexW / m_hurtCount;
 
-    m_deathTexture = IMG_LoadTexture(renderer, "image/DEATH.png");
-    m_deathCount = 4;
+    m_deathTexture = IMG_LoadTexture(renderer, "image/DEATH_RIGHT.png");
+    m_deathLeftTexture = IMG_LoadTexture(renderer, "image/DEATH.png");
+    m_deathCount = 6;
     int deathTexW;
     SDL_QueryTexture(m_deathTexture,  NULL, NULL, &deathTexW, &texH);
     mD_FrameWidth = deathTexW / m_deathCount;
@@ -112,6 +129,11 @@ void Monster::Update(const Player& player)
         mState = State::ATTACK;
         std::cout << "Collision detected, switching to ATTACK state\n";
         const_cast<Player&>(player).IncreaseRespawnCount();
+        const_cast<Player&>(player).Respawn();
+    }
+    else if(mState == State::HURT || mState == State::DEATH)
+    {
+
     }
     else
     {
@@ -119,26 +141,40 @@ void Monster::Update(const Player& player)
         justAttack = false;
     }
 
+    float playerX = player.getX();
+    facingRight = (playerX >= position.x);
+
+    float distance = std::abs(playerX - position.x);
+    const float attackDistance = 4 * TILE_SIZE;
+
     static Uint32 lastFireballTime = 0;
     Uint32 currentTime = SDL_GetTicks();
     const Uint32 fireballCooldown = 1000;
 
-    if(mState == State::ATTACK && (currentTime - lastFireballTime) >= fireballCooldown)
+    if(distance <= attackDistance && (currentTime - lastFireballTime) >= fireballCooldown && mState != State::HURT && mState != State::DEATH)
     {
-        float playerX = player.getX();
-        float velocityX = (playerX < position.x) ? -4.0f : 4.0f; // fireball di chuyen ve phia nhan vat
-        fireballs.emplace_back(fRenderer, position.x, position.y - mFrameHeight / 2, velocityX);
+        float velocityX = (playerX < position.x) ? -2.0f : 2.0f; // fireball di chuyen ve phia nhan vat
+        fireballs.emplace_back(fRenderer, position.x , position.y - mFrameHeight , velocityX);
         lastFireballTime = currentTime;
     }
 
     for(auto it = fireballs.begin(); it != fireballs.end();)
     {
-        it->Update();
+        it->Update(mMap);    // truyen vao map de check va cham
         SDL_Rect fireballBox = it->GetBoundingBox();
         if(monsterCollision(fireballBox, playerBox))
         {
-            const_cast<Player&>(player).IncreaseRespawnCount();
-            it = fireballs.erase(it); // xoa fireball khi va cham
+            Player::CharacterState playerState = player.getState();
+            if(playerState == Player::DEFEND_RIGHT || playerState == Player::DEFEND_LEFT)
+            {
+                it = fireballs.erase(it); // xoa fireball neu bi chan
+            }
+            else
+            {
+                const_cast<Player&>(player).IncreaseRespawnCount();
+                const_cast<Player&>(player).Respawn();
+                it = fireballs.erase(it); // xoa fireball khi va cham voi nhan vat
+            }
         }
         else if(it->isOutOfBounds())
         {
@@ -146,7 +182,7 @@ void Monster::Update(const Player& player)
         }
         else
         {
-         ++it;
+            ++it;
         }
     }
 }
@@ -154,6 +190,8 @@ void Monster::Update(const Player& player)
 void Monster::Render(SDL_Renderer* renderer, SDL_Rect& camera)
 {
     Uint32 now = SDL_GetTicks();
+    Uint32 frameDelay = (mState == State::HURT || mState == State::DEATH) ? 500 : 200; // 500ms cho hurt va death, 200ms cho idle va attack
+
     if (now > mLastFrameTime + 200)
     {
         mFrame = (mFrame + 1);
@@ -186,9 +224,9 @@ void Monster::Render(SDL_Renderer* renderer, SDL_Rect& camera)
         }
 
 
-    SDL_Texture* currentTexture = (mState == State::IDLE) ? m_idleTexture :
-                                  (mState == State::ATTACK) ? m_attackTexture :
-                                  (mState == State::HURT) ? m_hurtTexture : m_deathTexture;
+    SDL_Texture* currentTexture = (mState == State::IDLE) ? (facingRight ? m_idleTexture : m_idleLeftTexture) :
+                                  (mState == State::ATTACK) ? (facingRight ? m_attackTexture : m_attackLeftTexture) :
+                                  (mState == State::HURT) ? (facingRight ? m_hurtTexture : m_hurtLeftTexture) : (facingRight ? m_deathTexture : m_deathLeftTexture);
 
     int frameWidth = (mState == State::IDLE) ? mFrameWidth :
                      (mState == State::ATTACK) ? mA_FrameWidth :
@@ -251,25 +289,45 @@ std::vector<SDL_FPoint> Generate_Monsters(int count, int min_x, int max_x, int m
 }
 
 
-    std::vector<Monster> InitMonsters(SDL_Renderer* renderer, const std::string& idleTexturePath, const std::string& attackTexturePath, int idleCount, int attackCount, const std::vector<SDL_FPoint>& positions)
+    std::vector<Monster> InitMonsters(SDL_Renderer* renderer, const std::string& idleTexturePath, const std::string& idleLeftTexturePath,
+                                      const std::string& attackTexturePath, const std::string& attackLeftTexturePath, int idleCount, int attackCount,
+                                      const std::vector<SDL_FPoint>& positions, const int map[MAP_HEIGHT][MAP_WIDTH])
     {
      SDL_Texture* idleTexture = IMG_LoadTexture(renderer, idleTexturePath.c_str());
+     SDL_Texture* idleLeftTexture = IMG_LoadTexture(renderer, idleLeftTexturePath.c_str());
      SDL_Texture* attackTexture = IMG_LoadTexture(renderer, attackTexturePath.c_str());
+     SDL_Texture* attackLeftTexture = IMG_LoadTexture(renderer, attackLeftTexturePath.c_str());
      std::vector<Monster> monsters;
     if (!idleTexture)
     {
         SDL_Log("Failed to load idle texture: %s", IMG_GetError());
         return monsters;
     }
+    if (!idleLeftTexture)
+    {
+        SDL_Log("Failed to load idle left texture: %s", IMG_GetError());
+        SDL_DestroyTexture(idleTexture);
+        return monsters;
+    }
     if (!attackTexture)
     {
         SDL_Log("Failed to load attack texture: %s", IMG_GetError());
         SDL_DestroyTexture(idleTexture);
+        SDL_DestroyTexture(idleLeftTexture);
         return monsters;
     }
+    if (!attackLeftTexture)
+    {
+        SDL_Log("Failed to load attack texture: %s", IMG_GetError());
+        SDL_DestroyTexture(idleTexture);
+        SDL_DestroyTexture(idleLeftTexture);
+        SDL_DestroyTexture(attackTexture);
+        return monsters;
+    }
+
     for (auto& pos : positions)
     {
-        monsters.emplace_back(idleTexture, attackTexture, idleCount, attackCount, renderer);
+        monsters.emplace_back(idleTexture, idleLeftTexture, attackTexture, attackLeftTexture, idleCount, attackCount, renderer, map);
         monsters.back().setPosition(pos);
     }
     return monsters;

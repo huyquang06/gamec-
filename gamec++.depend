@@ -1,9 +1,10 @@
 # depslib dependency file v1.0
-1745599312 source:c:\sdl\laptrinhcodeblock\gamec++\main.cpp
+1746032396 source:c:\sdl\laptrinhcodeblock\gamec++\main.cpp
 	"CommonFunc.h"
 	"Monster.h"
 	"Player.h"
 	<vector>
+	<algorithm>
 
 1745599312 c:\sdl\laptrinhcodeblock\gamec++\commonfunc.h
 	<iostream>
@@ -13,12 +14,12 @@
 	<sstream>
 	<cmath>
 
-1745955726 source:c:\sdl\laptrinhcodeblock\gamec++\monster.cpp
+1746032439 source:c:\sdl\laptrinhcodeblock\gamec++\monster.cpp
 	"Monster.h"
 	"CommonFunc.h"
 	"Player.h"
 
-1745954699 c:\sdl\laptrinhcodeblock\gamec++\monster.h
+1746032332 c:\sdl\laptrinhcodeblock\gamec++\monster.h
 	"CommonFunc.h"
 	<vector>
 	<string>
@@ -26,10 +27,10 @@
 1745518315 source:c:\sdl\laptrinhcodeblock\gamec++\commonfunc.cpp
 	"CommonFunc.h"
 
-1745944005 source:c:\sdl\laptrinhcodeblock\gamec++\player.cpp
+1746021862 source:c:\sdl\laptrinhcodeblock\gamec++\player.cpp
 	"Player.h"
 
-1745944005 c:\sdl\laptrinhcodeblock\gamec++\player.h
+1746021862 c:\sdl\laptrinhcodeblock\gamec++\player.h
 	"CommonFunc.h"
 	"Monster.h"
 	<vector>

@@ -2,6 +2,7 @@
 #include "Monster.h"
 #include "Player.h"
 #include <vector>
+#include <algorithm>
 
 int tileMap[MAP_HEIGHT][MAP_WIDTH];
 
@@ -48,7 +49,7 @@ int main(int argc, char* argv[]) {
     int m_width = m_idleWidth / 4;
     int m_height = m_idleHeight;
     std::vector<SDL_FPoint> m_positions = Generate_Monsters(25, 300, 900, MAP_WIDTH * TILE_SIZE, m_width, m_height);
-    std::vector<Monster> monsters = InitMonsters(renderer, "image/IDLE_MONSTER.png", "image/ATTACK.png", 4, 7, m_positions);
+    std::vector<Monster> monsters = InitMonsters(renderer, "image/IDLE_MONSTER_RIGHT.png", "image/IDLE_MONSTER.png", "image/ATTACK_RIGHT.png", "image/ATTACK.png", 4, 7, m_positions, tileMap);
 
     // Initialize player
     int textureWidth, textureHeight;
@@ -76,6 +77,9 @@ int main(int argc, char* argv[]) {
         {
             monster.Update(player);
         }
+
+        monsters.erase(std::remove_if(monsters.begin(), monsters.end(),[](const Monster& monster){return monster.isDelete();}),
+                       monsters.end());
 
         SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255);
         SDL_RenderClear(renderer);
