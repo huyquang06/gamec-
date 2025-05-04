@@ -43,12 +43,12 @@ int main(int argc, char* argv[]) {
 
     // Initialize monsters
     SDL_Texture* m_idleTexture = IMG_LoadTexture(renderer, "image/IDLE_MONSTER.png");
-    SDL_Texture* m_attackTexture = IMG_LoadTexture(renderer, "image/ATTACK.png");
+    SDL_Texture* m_attackTexture = IMG_LoadTexture(renderer, "image/ATTACK_RIGHT.png");
     int m_idleWidth, m_idleHeight;
     SDL_QueryTexture(m_idleTexture, NULL, NULL, &m_idleWidth, &m_idleHeight);
     int m_width = m_idleWidth / 4;
     int m_height = m_idleHeight;
-    std::vector<SDL_FPoint> m_positions = Generate_Monsters(25, 300, 900, MAP_WIDTH * TILE_SIZE, m_width, m_height);
+    std::vector<SDL_FPoint> m_positions = Generate_Monsters(20, 300, 900, MAP_WIDTH * TILE_SIZE, m_width, m_height);
     std::vector<Monster> monsters = InitMonsters(renderer, "image/IDLE_MONSTER_RIGHT.png", "image/IDLE_MONSTER.png", "image/ATTACK_RIGHT.png", "image/ATTACK.png", 4, 7, m_positions, tileMap);
 
     // Initialize player
@@ -78,7 +78,7 @@ int main(int argc, char* argv[]) {
             monster.Update(player);
         }
 
-        monsters.erase(std::remove_if(monsters.begin(), monsters.end(),[](const Monster& monster){return monster.isDelete();}),
+        monsters.erase(std::remove_if(monsters.begin(), monsters.end(),[](const Monster& monster){return monster.isMarkedForDeletion();}),
                        monsters.end());
 
         SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255);

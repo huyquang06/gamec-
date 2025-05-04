@@ -3,14 +3,16 @@
 
 #include "CommonFunc.h"
 #include "Monster.h"
+#include "Bullet.h"
 #include <vector>
 
+class Arrow;
 class Player
 {
     public:
     enum CharacterState
 {
-    IDLE_RIGHT, IDLE_LEFT, WALKING_RIGHT, WALKING_LEFT, ATTACK_RIGHT, ATTACK_LEFT, DEFEND_RIGHT, DEFEND_LEFT
+    IDLE_RIGHT, IDLE_LEFT, WALKING_RIGHT, WALKING_LEFT, ATTACK_RIGHT, ATTACK_LEFT
 };
 
     Player(SDL_Renderer* renderer, float start_x, float start_y);
@@ -28,6 +30,13 @@ class Player
     CharacterState getState() const {return currentState;}
     void Respawn();
 
+    void setInvincibility(Uint32 duration);
+    bool isInvincible() const;
+
+    bool isFacingRight() const { return facingRight; }
+    int getAttackFrameWidth() const { return attackFrameWidth; }
+    const std::vector<Bullet>& getBullets() const { return bullets; }
+    std::vector<Bullet>& getBulletsNonConst() { return bullets; }
 
 private:
     float x,y;
@@ -37,10 +46,12 @@ private:
     int frameWidth, frameHeight;
     int idleframeWidth, idleframeHeight;
     int attackFrameWidth, attackFrameHeight;
-    int defendFrameWidth, defendFrameHeight;
-    int walkingFrame, idleFrame, attackFrame, defendFrame;
+    int walkingFrame, idleFrame, attackFrame;
     int respawnCount;
+    int defendCoolDown;
     bool gameOver;
+    bool hasShot;
+
 
     Uint32 frameTimer;
     CharacterState currentState;
@@ -51,10 +62,16 @@ private:
     SDL_Texture* idleLTexture;
     SDL_Texture* attackRTexture;
     SDL_Texture* attackLTexture;
-    SDL_Texture* defendRTexture;
-    SDL_Texture* defendLTexture;
     SDL_Rect spriteClip;
     SDL_Rect charRect;
+
+    SDL_Renderer* renderer;
+    std::vector<Bullet> bullets;
+
+    bool isInvincibleState;
+    Uint32 invincibilityTimer;
+    Uint32 invincibilityDuration;
+
 
 private:
     void updateAnimation();

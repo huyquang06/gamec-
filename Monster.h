@@ -6,6 +6,7 @@
 #include <string>
 
 class Player;
+class Bullet; // Forward declaration cho Bullet
 
 bool monsterCollision(const SDL_Rect& a, const SDL_Rect& b);
 
@@ -19,7 +20,8 @@ public:
     bool isOutOfBounds() const;
 
 private:
-    SDL_Texture* texture;
+    SDL_Texture* textureLeft;
+    SDL_Texture* textureRight;
     float x, y;
     float velocityX;
     int width, height;
@@ -32,11 +34,12 @@ public:
     Monster(SDL_Texture* idleTexture, SDL_Texture* idleLeftTexture, SDL_Texture* attackTexture, SDL_Texture* attackLeftTexture,
             int idleCount, int attackCount, SDL_Renderer* renderer, const int map[MAP_HEIGHT][MAP_WIDTH]);
 
-    void Update(const Player& player);  // trang thai monster
+    void Update(const Player& player);  // Trạng thái monster
     void Render(SDL_Renderer* renderer, SDL_Rect& camera);
     SDL_Rect GetBoundingBox() const;
-    void takeHit();
-    bool isDelete() const { return markedForDeletion; }
+    void TakeDamage(int damage);        // Phương thức để nhận sát thương
+    void takeHit();                     // Phương thức cũ để nhận đòn đánh
+    bool isMarkedForDeletion() const { return markedForDeletion; }
     void setPosition(const SDL_FPoint& pos) { position = pos; }
 
 private:
@@ -65,10 +68,10 @@ private:
     Uint32 mLastFrameTime;
     State mState;
 
-    SDL_Renderer* fRenderer; // tao fireball
+    SDL_Renderer* fRenderer; // Tạo fireball
     const int (*mMap)[MAP_WIDTH];
     std::vector<Fireball> fireballs;
-    bool justAttack;  // bien kiem soat viec ban fireball chi 1 lan moi lan attack
+    bool justAttack;  // Biến kiểm soát việc bắn fireball chỉ 1 lần mỗi lần attack
     int hitCount;
     bool markedForDeletion;
     bool facingRight;
@@ -88,5 +91,6 @@ std::vector<Monster> InitMonsters(
     const int map[MAP_HEIGHT][MAP_WIDTH]);
 
 void RenderMonsters(SDL_Renderer* renderer, std::vector<Monster>& monsters, SDL_Rect& camera);
+
 
 #endif

@@ -1,12 +1,12 @@
 # depslib dependency file v1.0
-1746032396 source:c:\sdl\laptrinhcodeblock\gamec++\main.cpp
+1746350281 source:c:\sdl\laptrinhcodeblock\gamec++\main.cpp
 	"CommonFunc.h"
 	"Monster.h"
 	"Player.h"
 	<vector>
 	<algorithm>
 
-1745599312 c:\sdl\laptrinhcodeblock\gamec++\commonfunc.h
+1746271967 c:\sdl\laptrinhcodeblock\gamec++\commonfunc.h
 	<iostream>
 	<SDL.h>
 	<SDL_image.h>
@@ -14,12 +14,13 @@
 	<sstream>
 	<cmath>
 
-1746032439 source:c:\sdl\laptrinhcodeblock\gamec++\monster.cpp
+1746373749 source:c:\sdl\laptrinhcodeblock\gamec++\monster.cpp
 	"Monster.h"
 	"CommonFunc.h"
 	"Player.h"
+	"Bullet.h"
 
-1746032332 c:\sdl\laptrinhcodeblock\gamec++\monster.h
+1746373749 c:\sdl\laptrinhcodeblock\gamec++\monster.h
 	"CommonFunc.h"
 	<vector>
 	<string>
@@ -27,11 +28,25 @@
 1745518315 source:c:\sdl\laptrinhcodeblock\gamec++\commonfunc.cpp
 	"CommonFunc.h"
 
-1746021862 source:c:\sdl\laptrinhcodeblock\gamec++\player.cpp
+1746349606 source:c:\sdl\laptrinhcodeblock\gamec++\player.cpp
 	"Player.h"
 
-1746021862 c:\sdl\laptrinhcodeblock\gamec++\player.h
+1746371160 c:\sdl\laptrinhcodeblock\gamec++\player.h
 	"CommonFunc.h"
 	"Monster.h"
+	"Bullet.h"
 	<vector>
+
+1746207928 c:\sdl\laptrinhcodeblock\gamec++\arrow.h
+	"CommonFunc.h"
+
+1746271656 source:c:\sdl\laptrinhcodeblock\gamec++\arrow.cpp
+	"Arrow.h"
+	<iostream>
+
+1746347009 source:c:\sdl\laptrinhcodeblock\gamec++\bullet.cpp
+	"Bullet.h"
+
+1746349149 c:\sdl\laptrinhcodeblock\gamec++\bullet.h
+	"CommonFunc.h"
 

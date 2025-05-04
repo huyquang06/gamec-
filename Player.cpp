@@ -12,7 +12,6 @@ Player::Player(SDL_Renderer* renderer, float start_x, float start_y)
     walkingFrame = 0;
     idleFrame = 0;
     attackFrame = 0;
-    defendFrame = 0;
     frameTimer = SDL_GetTicks();
     currentState = IDLE_RIGHT;
 
@@ -22,13 +21,11 @@ Player::Player(SDL_Renderer* renderer, float start_x, float start_y)
     walkRTexture = IMG_LoadTexture(renderer, "image/RUN.png");
     walkLTexture = IMG_LoadTexture(renderer, "image/RUN_NGUOC.png");
     idleLTexture = IMG_LoadTexture(renderer, "image/IDLE_LEFT.png");
-    idleRTexture = IMG_LoadTexture(renderer, "image/IDLE.png");
+    idleRTexture = IMG_LoadTexture(renderer, "image/IDLE_RIGHT.png");
     attackRTexture = IMG_LoadTexture(renderer, "image/MAIN_ATTACK.png");
     attackLTexture = IMG_LoadTexture(renderer, "image/MAIN_ATTACK_LEFT.png");
-    defendRTexture = IMG_LoadTexture(renderer, "image/MAIN_DEFEND.png");
-    defendLTexture = IMG_LoadTexture(renderer, "image/MAIN_DEFEND_LEFT.png");
 
-    // lay kich thuoc nhan vat khi di chuyen
+    // Lấy kích thước nhân vật khi di chuyển
     int textureWidth, textureHeight;
     if (walkRTexture) {
         SDL_QueryTexture(walkRTexture, NULL, NULL, &textureWidth, &textureHeight);
@@ -62,21 +59,10 @@ Player::Player(SDL_Renderer* renderer, float start_x, float start_y)
         attackFrameHeight = 0;
     }
 
-    int defendTextureWidth, defendTextureHeight;
-    if(defendRTexture)
-    {
-        SDL_QueryTexture(defendRTexture, NULL, NULL, &defendTextureWidth, &defendTextureHeight);
-        defendFrameWidth = defendTextureWidth / 6;
-        defendFrameHeight = defendTextureHeight;
-    }
-    else
-    {
-        defendFrameWidth = 0;
-        defendFrameHeight = 0;
-    }
-
     spriteClip = {0, 0, idleframeWidth, idleframeHeight};
     charRect = {(int)x, (int)y, idleframeWidth, idleframeHeight};
+
+    this->renderer = renderer;
 }
 
 Player::~Player()
@@ -87,13 +73,11 @@ Player::~Player()
     SDL_DestroyTexture(idleLTexture);
     SDL_DestroyTexture(attackRTexture);
     SDL_DestroyTexture(attackLTexture);
-    SDL_DestroyTexture(defendRTexture);
-    SDL_DestroyTexture(defendLTexture);
 }
 
 void Player::handleInput(SDL_Event& event)
 {
-     if (event.type == SDL_KEYDOWN) {
+    if (event.type == SDL_KEYDOWN) {
         if (event.key.keysym.sym == SDLK_a) { moveLeft = true; facingRight = false; }
         if (event.key.keysym.sym == SDLK_d) { moveRight = true; facingRight = true; }
         if (event.key.keysym.sym == SDLK_SPACE && !isJumping) {
@@ -101,21 +85,17 @@ void Player::handleInput(SDL_Event& event)
             velocity = -jumpForce;
         }
     }
-    if (event.type == SDL_KEYUP) {
+    if (event.type == SDL_KEYUP)
+    {
         if (event.key.keysym.sym == SDLK_a) moveLeft = false;
         if (event.key.keysym.sym == SDLK_d) moveRight = false;
     }
-    if(event.type == SDL_MOUSEBUTTONDOWN && event.button.button == SDL_BUTTON_LEFT)
+    if (event.type == SDL_MOUSEBUTTONDOWN && event.button.button == SDL_BUTTON_LEFT)
     {
         currentState = facingRight ? ATTACK_RIGHT : ATTACK_LEFT;
-        attackFrame = 0; // reset frame attack
-        frameTimer = SDL_GetTicks();
-    }
-    if(event.type == SDL_MOUSEBUTTONDOWN && event.button.button == SDL_BUTTON_RIGHT)
-    {
-        currentState = facingRight ? DEFEND_RIGHT : DEFEND_LEFT;
-        defendFrame = 0;
-        frameTimer = SDL_GetTicks();
+        float bulletY = y + frameHeight / 5;
+        float velocityX = facingRight ? 2.0f : -2.0f;
+        bullets.emplace_back(renderer, x + (facingRight ? frameWidth / 2 : -frameWidth /2 ), bulletY, velocityX);
     }
 }
 
@@ -131,8 +111,9 @@ bool Player::checkCollision_x(float new_x, float y)
 
     for (int row = top; row <= bottom; row++) {
         if ((left >= 0 && left < MAP_WIDTH && row >= 0 && row < MAP_HEIGHT && is_solid(tileMap[row][left])) ||
-            (right >= 0 && right < MAP_WIDTH && row >= 0 && row < MAP_HEIGHT && is_solid(tileMap[row][right]))){            return true;
-    }
+            (right >= 0 && right < MAP_WIDTH && row >= 0 && row < MAP_HEIGHT && is_solid(tileMap[row][right]))){
+            return true;
+        }
     }
     return false;
 }
@@ -184,17 +165,12 @@ void Player::updateAnimation()
         else if(currentState == ATTACK_LEFT || currentState == ATTACK_RIGHT)
         {
             attackFrame++;
-            if(attackFrame >= 6)
+            if(attackFrame >= ATTACK_FRAMES)
             {
                 currentState = facingRight ? IDLE_RIGHT : IDLE_LEFT;
                 attackFrame = 0;
             }
-            frameTimer = SDL_GetTicks() + IDLE_FRAME_DELAY / 2; // tan cong nhanh hon
-        }
-        else if(currentState == DEFEND_LEFT || currentState == DEFEND_RIGHT)
-        {
-            defendFrame = (defendFrame + 1) % 6;
-            frameTimer = SDL_GetTicks() + IDLE_FRAME_DELAY;
+            frameTimer = SDL_GetTicks() + IDLE_FRAME_DELAY / 2;
         }
         else
         {
@@ -217,13 +193,6 @@ void Player::updateAnimation()
         spriteClip.w = attackFrameWidth;
         spriteClip.h = attackFrameHeight;
     }
-    else if(currentState == DEFEND_LEFT || currentState == DEFEND_RIGHT)
-    {
-        spriteClip.x = defendFrame * defendFrameWidth;
-        spriteClip.y = 0;
-        spriteClip.w = defendFrameWidth;
-        spriteClip.h = defendFrameHeight;
-    }
     else
     {
         spriteClip.x = idleFrame * idleframeWidth;
@@ -235,34 +204,24 @@ void Player::updateAnimation()
 
 void Player::Update(SDL_Rect& camera, std::vector<Monster>& monsters)
 {
-    if(currentState != ATTACK_LEFT && currentState != ATTACK_RIGHT && currentState != DEFEND_LEFT && currentState != DEFEND_RIGHT)
+    if(currentState != ATTACK_LEFT && currentState != ATTACK_RIGHT )
     {
         if (isJumping)
-    {
-        currentState = facingRight ? IDLE_RIGHT : IDLE_LEFT;
-        if (moveLeft) currentState = WALKING_LEFT;
-        if (moveRight) currentState = WALKING_RIGHT;
-    }
-    else
-    {
-        currentState = moveLeft ? WALKING_LEFT :
-                       moveRight ? WALKING_RIGHT :
-                       facingRight ? IDLE_RIGHT : IDLE_LEFT;
-    }
-    }
-
-    if(moveLeft)
-    {
-        float new_x = x - speed;
-        if(!checkCollision_x(new_x, y))
         {
-            x = new_x;
+            currentState = facingRight ? IDLE_RIGHT : IDLE_LEFT;
+            if (moveLeft) currentState = WALKING_LEFT;
+            if (moveRight) currentState = WALKING_RIGHT;
         }
         else
         {
-            int left_tile = static_cast<int>((new_x + COLLISION_MARGIN) / TILE_SIZE);
+            currentState = moveLeft ? WALKING_LEFT :
+                           moveRight ? WALKING_RIGHT :
+                           facingRight ? IDLE_RIGHT : IDLE_LEFT;
         }
     }
+
+    if(moveLeft && !checkCollision_x(x-speed,y)) x -= speed;
+
     if(moveRight)
     {
         float new_x = x + speed;
@@ -276,7 +235,7 @@ void Player::Update(SDL_Rect& camera, std::vector<Monster>& monsters)
             x = right_tile * TILE_SIZE - frameWidth + COLLISION_MARGIN;
         }
     }
-    // check bien trai, phai
+    // Kiểm tra biên trái, phải
     if(x < 0) x = 0;
     if(x > MAP_WIDTH * TILE_SIZE - frameWidth) x = MAP_WIDTH * TILE_SIZE - frameWidth;
 
@@ -290,10 +249,10 @@ void Player::Update(SDL_Rect& camera, std::vector<Monster>& monsters)
         if(respawnCount >= 3)
         {
             gameOver = true;
-            std::cout << "GAME OVER!" << std::endl;
+            std::cout << "TRÒ CHƠI KẾT THÚC!" << std::endl;
             return;
         }
-        x = find_RespawnPoint();
+        x = 0.0f;
         y = getGroundLevel(x, frameWidth, frameHeight, true);
         velocity = 0;
         isJumping = false;
@@ -321,25 +280,39 @@ void Player::Update(SDL_Rect& camera, std::vector<Monster>& monsters)
         isJumping = true;
     }
 
-    //kiem tra va cham voi quai vat khi dang tan cong
     if(currentState == ATTACK_LEFT || currentState == ATTACK_RIGHT)
     {
-        SDL_Rect playerBox = GetBoundingBox();
-        for(auto it = monsters.begin(); it != monsters.end();)
-        {
-            SDL_Rect monsterBox = it->GetBoundingBox();
-            if(monsterCollision(playerBox, monsterBox))
-            {
-                it = monsters.erase(it); // xoa quai vat
-            }
-            else
-            {
-                ++it;
+        SDL_Rect attackBox = GetBoundingBox();
+        if (facingRight) {
+            attackBox.x += attackFrameWidth / 2;
+        } else {
+            attackBox.x -= attackFrameWidth / 2;
+        }
+        for (auto& monster : monsters) {
+            SDL_Rect monsterBox = monster.GetBoundingBox();
+            if (SDL_HasIntersection(&attackBox, &monsterBox)) {
+                monster.TakeDamage(1);
             }
         }
     }
 
-    camera.x = (int)x + frameWidth / 2 - WINDOW_WIDTH / 2;
+    // Cập nhật và xóa Bullet
+    for (auto it = bullets.begin(); it != bullets.end();)
+    {
+        it->Update(tileMap);
+        std::cout << "Bullet x: " << it->getX() << ", y: " << it->getY() << "\n";
+        if (it->isOutOfBounds())
+        {
+            std::cout << "Bullet out of bounds, erasing\n";
+            it = bullets.erase(it);
+        }
+        else
+        {
+            ++it;
+        }
+    }
+
+    camera.x = static_cast<int>(x + frameWidth / 2 - WINDOW_WIDTH / 2);
     camera.y = 0;
     if(camera.x < 0) camera.x = 0;
     if(camera.x > MAP_WIDTH * TILE_SIZE - WINDOW_WIDTH) camera.x = MAP_WIDTH * TILE_SIZE - WINDOW_WIDTH;
@@ -354,16 +327,20 @@ void Player::Update(SDL_Rect& camera, std::vector<Monster>& monsters)
 
 void Player::Render(SDL_Renderer* renderer, SDL_Rect& camera)
 {
-    if(gameOver) return;
+    if (gameOver) return;
 
     SDL_Texture* currentTexture = (currentState == WALKING_LEFT) ? walkLTexture :
                                   (currentState == WALKING_RIGHT) ? walkRTexture :
                                   (currentState == IDLE_LEFT) ? idleLTexture :
                                   (currentState == ATTACK_LEFT) ? attackLTexture :
-                                  (currentState == ATTACK_RIGHT) ? attackRTexture :
-                                  (currentState == DEFEND_LEFT) ? defendLTexture :
-                                  (currentState == DEFEND_RIGHT) ? defendRTexture : idleRTexture;
+                                  (currentState == ATTACK_RIGHT) ? attackRTexture : idleRTexture;
     SDL_RenderCopy(renderer, currentTexture, &spriteClip, &charRect);
+
+    std::cout << "Rendering " << bullets.size() << " bullets\n";
+    for (auto& bullet : bullets)
+    {
+        bullet.Render(renderer, camera);
+    }
 }
 
 bool Player::isGameOver() const
@@ -378,7 +355,11 @@ int Player::getRespawnCount() const
 
 SDL_Rect Player::GetBoundingBox() const
 {
-    return {(int)x, (int)y, spriteClip.w, spriteClip.h};
+    const int offsetX = 5;
+    const int offsetY = 5;
+    const int shrinkW = 10;
+    const int shrinkH = 10;
+    return {(int)x + offsetX, (int)y + offsetY, spriteClip.w - shrinkW, spriteClip.h - shrinkH};
 }
 
 void Player::IncreaseRespawnCount()
@@ -390,7 +371,7 @@ void Player::IncreaseRespawnCount()
     }
     else
     {
-        x = find_RespawnPoint();
+        x = 0.0f;
         y = getGroundLevel(x, frameWidth, frameHeight, true);
         velocity = 0;
         isJumping = false;
@@ -404,4 +385,20 @@ void Player::Respawn()
     velocity = 0;
     isJumping = false;
     currentState = facingRight ? IDLE_RIGHT : IDLE_LEFT;
+}
+
+void Player::setInvincibility(Uint32 duration)
+{
+    isInvincibleState = true;
+    invincibilityTimer = SDL_GetTicks();
+    invincibilityDuration = duration;
+}
+
+bool Player::isInvincible() const
+{
+    if(isInvincibleState && (SDL_GetTicks() - invincibilityTimer < invincibilityDuration))
+    {
+        return true;
+    }
+    return false;
 }

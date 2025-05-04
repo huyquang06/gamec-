@@ -1,16 +1,19 @@
 #include "Monster.h"
 #include "CommonFunc.h"
 #include "Player.h"
+#include "Bullet.h"
 
 bool monsterCollision(const SDL_Rect& a, const SDL_Rect& b)
 {
-    return (a.x < b.x + b.w && a.x + a.w > b.x && a.y < b.y + b.h && a.y + a.h > b.y);
+    return (a.x < b.x + b.w && a.x + a.w > b.x &&
+            a.y < b.y + b.h && a.y + a.h > b.y);
 }
 
 Fireball::Fireball(SDL_Renderer* renderer, float x, float y, float velocityX) : x(x), y(y), velocityX(velocityX)
 {
-    texture = IMG_LoadTexture(renderer, "image/FIREBALL.png");
-    if(!texture)
+    textureLeft = IMG_LoadTexture(renderer, "image/FIREBALL.png");
+    textureRight = IMG_LoadTexture(renderer, "image/FIREBALL_REVERSE.png");
+    if(!textureLeft || !textureRight)
     {
         SDL_Log("Failed to load fireball texture: %s", IMG_GetError());
         width = 0;
@@ -18,13 +21,13 @@ Fireball::Fireball(SDL_Renderer* renderer, float x, float y, float velocityX) : 
     }
     else
     {
-        SDL_QueryTexture(texture, NULL, NULL, &width, &height);
+        SDL_QueryTexture(velocityX >= 0 ? textureRight : textureLeft, NULL, NULL, &width, &height);
     }
 }
 
 void Fireball::Update(const int map[MAP_HEIGHT][MAP_WIDTH])
 {
-    x+= velocityX;  // di chuyen fireball theo huong
+    x += velocityX;
 
     int row = static_cast<int>(y / TILE_SIZE);
     int col = static_cast<int>(x / TILE_SIZE);
@@ -38,15 +41,20 @@ void Fireball::Update(const int map[MAP_HEIGHT][MAP_WIDTH])
     }
 }
 
-void Fireball::Render(SDL_Renderer* renderder, SDL_Rect& camera)
+void Fireball::Render(SDL_Renderer* renderer, SDL_Rect& camera)
 {
+    SDL_Texture* currentTexture = (velocityX >= 0) ? textureRight : textureLeft;
     SDL_Rect dstRect = {(int)(x - camera.x), (int)(y - camera.y), width, height};
-    SDL_RenderCopy(renderder, texture, NULL, &dstRect);
+    SDL_RenderCopy(renderer, currentTexture, NULL, &dstRect);
 }
 
 SDL_Rect Fireball::GetBoundingBox() const
 {
-    return {(int)x, (int)y, width, height};
+    const int offsetX = 5;
+    const int offsetY = 5;
+    const int shrinkW = 5; // Giảm shrink để tăng vùng va chạm
+    const int shrinkH = 5;
+    return {(int)x + offsetX, (int)y + offsetY, width - shrinkW, height - shrinkH};
 }
 
 bool Fireball::isOutOfBounds() const
@@ -81,8 +89,8 @@ Monster::Monster(SDL_Texture* idleTexture, SDL_Texture* idleLeftTexture, SDL_Tex
     SDL_QueryTexture(m_attackTexture, NULL, NULL, &attackTexW, &texH);
     mA_FrameWidth = attackTexW / attackCount;
 
-    m_hurtTexture = IMG_LoadTexture(renderer, "image/HURT_RIGHT.png");
-    m_hurtLeftTexture = IMG_LoadTexture(renderer, "image/HURT.png");
+    m_hurtTexture = IMG_LoadTexture(renderer, "image/MONSTER_HURT_RIGHT.png");
+    m_hurtLeftTexture = IMG_LoadTexture(renderer, "image/MONSTER_HURT_LEFT.png");
     m_hurtCount = 4;
     int hurtTexW;
     SDL_QueryTexture(m_hurtTexture, NULL, NULL, &hurtTexW, &texH);
@@ -92,15 +100,16 @@ Monster::Monster(SDL_Texture* idleTexture, SDL_Texture* idleLeftTexture, SDL_Tex
     m_deathLeftTexture = IMG_LoadTexture(renderer, "image/DEATH.png");
     m_deathCount = 6;
     int deathTexW;
-    SDL_QueryTexture(m_deathTexture,  NULL, NULL, &deathTexW, &texH);
+    SDL_QueryTexture(m_deathTexture, NULL, NULL, &deathTexW, &texH);
     mD_FrameWidth = deathTexW / m_deathCount;
 }
 
-void Monster::takeHit()
+void Monster::TakeDamage(int damage)
 {
-    hitCount++;
-    mFrame = 0; // reset frame de chay lai
+    hitCount += damage;
+    mFrame = 0;
     mLastFrameTime = SDL_GetTicks();
+    std::cout << "Monster hit, hitCount=" << hitCount << "\n";
 
     if(hitCount == 1)
     {
@@ -109,6 +118,7 @@ void Monster::takeHit()
     else if(hitCount >= 2)
     {
         mState = State::DEATH;
+        std::cout << "Monster marked for death\n";
     }
 }
 
@@ -116,24 +126,96 @@ void Monster::Update(const Player& player)
 {
     if(mState == State::HURT || mState == State::DEATH)
     {
+        for(auto it = fireballs.begin(); it != fireballs.end();)
+        {
+            it->Update(mMap);
+            SDL_Rect fireballBox = it->GetBoundingBox();
+            SDL_Rect playerBox = player.GetBoundingBox();
+            if (monsterCollision(fireballBox, playerBox))
+            {
+                if (!player.isInvincible())
+                {
+                    const_cast<Player&>(player).IncreaseRespawnCount();
+                    const_cast<Player&>(player).Respawn();
+                }
+                it = fireballs.erase(it);
+            }
+            else if(it->isOutOfBounds())
+            {
+                it = fireballs.erase(it);
+            }
+            else
+            {
+                ++it;
+            }
+        }
         return;
     }
 
     SDL_Rect monsterBox = GetBoundingBox();
-    SDL_Rect playerBox = player.GetBoundingBox();
 
-    State previousState  = mState;
+    if (player.getState() == Player::ATTACK_RIGHT || player.getState() == Player::ATTACK_LEFT)
+    {
+        SDL_Rect attackBox = player.GetBoundingBox();
+        if (player.isFacingRight()) {
+            attackBox.x += player.getAttackFrameWidth() / 2;
+        } else {
+            attackBox.x -= player.getAttackFrameWidth() / 2;
+        }
+        if (monsterCollision(attackBox, monsterBox))
+        {
+            TakeDamage(1);
+        }
+    }
 
-    if(monsterCollision(monsterBox, playerBox))
+
+    auto& bullets = const_cast<Player&>(player).getBulletsNonConst(); // Lấy tham chiếu không const
+    auto bulletIt = bullets.begin();
+    while (bulletIt != bullets.end())
+    {
+        SDL_Rect bulletBox = bulletIt->GetBoundingBox();
+        bool bulletConsumed = false;
+
+        if (monsterCollision(bulletBox, monsterBox))
+        {
+            TakeDamage(2);
+            bulletIt = bullets.erase(bulletIt); // Xóa Bullet sau khi va chạm với Monster
+            bulletConsumed = true;
+        }
+
+        if(!bulletConsumed)
+        {
+            auto fireballIt = fireballs.begin();
+            while (fireballIt != fireballs.end())
+            {
+                SDL_Rect fireballBox = fireballIt->GetBoundingBox();
+                if (monsterCollision(bulletBox, fireballBox))
+                {
+                    fireballIt = fireballs.erase(fireballIt);
+                    bulletIt = bullets.erase(bulletIt); // Xóa Bullet sau khi va chạm với Fireball
+                    bulletConsumed = true;
+                    break;
+                }
+                else
+                {
+                    ++fireballIt;
+                }
+            }
+        }
+
+        if (!bulletConsumed)
+        {
+            ++bulletIt;
+        }
+    }
+
+    State previousState = mState;
+
+    if(!player.isInvincible() && monsterCollision(monsterBox, player.GetBoundingBox()))
     {
         mState = State::ATTACK;
-        std::cout << "Collision detected, switching to ATTACK state\n";
         const_cast<Player&>(player).IncreaseRespawnCount();
         const_cast<Player&>(player).Respawn();
-    }
-    else if(mState == State::HURT || mState == State::DEATH)
-    {
-
     }
     else
     {
@@ -141,6 +223,11 @@ void Monster::Update(const Player& player)
         justAttack = false;
     }
 
+    if(mState != previousState)
+    {
+        mFrame = 0;
+        mLastFrameTime = SDL_GetTicks();
+    }
     float playerX = player.getX();
     facingRight = (playerX >= position.x);
 
@@ -148,53 +235,31 @@ void Monster::Update(const Player& player)
     const float attackDistance = 4 * TILE_SIZE;
 
     static Uint32 lastFireballTime = 0;
+
     Uint32 currentTime = SDL_GetTicks();
     const Uint32 fireballCooldown = 1000;
 
-    if(distance <= attackDistance && (currentTime - lastFireballTime) >= fireballCooldown && mState != State::HURT && mState != State::DEATH)
+    if(distance <= attackDistance && (currentTime - lastFireballTime) >= fireballCooldown)
     {
-        float velocityX = (playerX < position.x) ? -2.0f : 2.0f; // fireball di chuyen ve phia nhan vat
-        fireballs.emplace_back(fRenderer, position.x , position.y - mFrameHeight , velocityX);
+        float fireballY = position.y - mFrameHeight;
+        float velocityX = (playerX < position.x) ? -2.0f : 2.0f;
+        fireballs.emplace_back(fRenderer, position.x, fireballY, velocityX);
         lastFireballTime = currentTime;
-    }
 
-    for(auto it = fireballs.begin(); it != fireballs.end();)
-    {
-        it->Update(mMap);    // truyen vao map de check va cham
-        SDL_Rect fireballBox = it->GetBoundingBox();
-        if(monsterCollision(fireballBox, playerBox))
-        {
-            Player::CharacterState playerState = player.getState();
-            if(playerState == Player::DEFEND_RIGHT || playerState == Player::DEFEND_LEFT)
-            {
-                it = fireballs.erase(it); // xoa fireball neu bi chan
-            }
-            else
-            {
-                const_cast<Player&>(player).IncreaseRespawnCount();
-                const_cast<Player&>(player).Respawn();
-                it = fireballs.erase(it); // xoa fireball khi va cham voi nhan vat
-            }
-        }
-        else if(it->isOutOfBounds())
-        {
-            it = fireballs.erase(it); // xoa fireball neu ra khoi man hinh
-        }
-        else
-        {
-            ++it;
-        }
+        mState = State::ATTACK;
+        mFrame = 0;
+        mLastFrameTime = SDL_GetTicks();
     }
 }
 
 void Monster::Render(SDL_Renderer* renderer, SDL_Rect& camera)
 {
     Uint32 now = SDL_GetTicks();
-    Uint32 frameDelay = (mState == State::HURT || mState == State::DEATH) ? 500 : 200; // 500ms cho hurt va death, 200ms cho idle va attack
+    Uint32 frameDelay = (mState == State::HURT || mState == State::DEATH) ? 200 : 100;
 
-    if (now > mLastFrameTime + 200)
+    if (now > mLastFrameTime + frameDelay)
     {
-        mFrame = (mFrame + 1);
+        mFrame++;
         mLastFrameTime = now;
 
         if(mState == State::IDLE)
@@ -205,7 +270,7 @@ void Monster::Render(SDL_Renderer* renderer, SDL_Rect& camera)
         {
             mFrame %= m_attackCount;
         }
-        else  if(mState == State::HURT)
+        else if(mState == State::HURT)
         {
             if(mFrame >= m_hurtCount)
             {
@@ -213,16 +278,15 @@ void Monster::Render(SDL_Renderer* renderer, SDL_Rect& camera)
                 mFrame = 0;
             }
         }
-            else if(mState == State::DEATH)
+        else if(mState == State::DEATH)
+        {
+            if(mFrame >= m_deathCount)
             {
-                if(mFrame >= m_deathCount)
-                {
-                    markedForDeletion = true;
-                    return;
-                }
+                markedForDeletion = true;
+                return;
             }
         }
-
+    }
 
     SDL_Texture* currentTexture = (mState == State::IDLE) ? (facingRight ? m_idleTexture : m_idleLeftTexture) :
                                   (mState == State::ATTACK) ? (facingRight ? m_attackTexture : m_attackLeftTexture) :
@@ -233,18 +297,23 @@ void Monster::Render(SDL_Renderer* renderer, SDL_Rect& camera)
                      (mState == State::HURT) ? mH_FrameWidth : mD_FrameWidth;
 
     SDL_Rect srcRect = { mFrame * frameWidth, 0, frameWidth, mFrameHeight };
-    SDL_Rect dstRect = { (int)(position.x - camera.x), (int)(position.y - camera.y - mFrameHeight), frameWidth, mFrameHeight };
+    SDL_Rect dstRect = { (int)(position.x - camera.x), (int)(position.y - mFrameHeight - camera.y), frameWidth, mFrameHeight };
     SDL_RenderCopy(renderer, currentTexture, &srcRect, &dstRect);
 
-    for(auto& Fireball : fireballs)
+    for(auto& fireball : fireballs)
     {
-        Fireball.Render(renderer, camera);
+        fireball.Update(mMap);
+        fireball.Render(renderer, camera);
     }
 }
 
 SDL_Rect Monster::GetBoundingBox() const
 {
-    return {(int)position.x, (int)(position.y - mFrameHeight), mFrameWidth, mFrameHeight};
+    const int offsetX = 10;
+    const int offsetY = 10;
+    const int shrinkW = 10; // Giảm shrink để tăng vùng va chạm
+    const int shrinkH = 10;
+    return {(int)position.x + offsetX, (int)(position.y - mFrameHeight) + offsetY, mFrameWidth - shrinkW, mFrameHeight - shrinkH};
 }
 
 std::vector<SDL_FPoint> Generate_Monsters(int count, int min_x, int max_x, int max_map_x, int width, int height) {
@@ -252,7 +321,7 @@ std::vector<SDL_FPoint> Generate_Monsters(int count, int min_x, int max_x, int m
 
     int numZones = 5;
     int monstersPerZone = count / numZones;
-    const int minDistance = 250;
+    const int minDistance = 300;
 
     int zoneWidth = (max_map_x - 280) / numZones;
 
@@ -288,16 +357,15 @@ std::vector<SDL_FPoint> Generate_Monsters(int count, int min_x, int max_x, int m
     return positions;
 }
 
-
-    std::vector<Monster> InitMonsters(SDL_Renderer* renderer, const std::string& idleTexturePath, const std::string& idleLeftTexturePath,
-                                      const std::string& attackTexturePath, const std::string& attackLeftTexturePath, int idleCount, int attackCount,
-                                      const std::vector<SDL_FPoint>& positions, const int map[MAP_HEIGHT][MAP_WIDTH])
-    {
-     SDL_Texture* idleTexture = IMG_LoadTexture(renderer, idleTexturePath.c_str());
-     SDL_Texture* idleLeftTexture = IMG_LoadTexture(renderer, idleLeftTexturePath.c_str());
-     SDL_Texture* attackTexture = IMG_LoadTexture(renderer, attackTexturePath.c_str());
-     SDL_Texture* attackLeftTexture = IMG_LoadTexture(renderer, attackLeftTexturePath.c_str());
-     std::vector<Monster> monsters;
+std::vector<Monster> InitMonsters(SDL_Renderer* renderer, const std::string& idleTexturePath, const std::string& idleLeftTexturePath,
+                                  const std::string& attackTexturePath, const std::string& attackLeftTexturePath, int idleCount, int attackCount,
+                                  const std::vector<SDL_FPoint>& positions, const int map[MAP_HEIGHT][MAP_WIDTH])
+{
+    SDL_Texture* idleTexture = IMG_LoadTexture(renderer, idleTexturePath.c_str());
+    SDL_Texture* idleLeftTexture = IMG_LoadTexture(renderer, idleLeftTexturePath.c_str());
+    SDL_Texture* attackTexture = IMG_LoadTexture(renderer, attackTexturePath.c_str());
+    SDL_Texture* attackLeftTexture = IMG_LoadTexture(renderer, attackLeftTexturePath.c_str());
+    std::vector<Monster> monsters;
     if (!idleTexture)
     {
         SDL_Log("Failed to load idle texture: %s", IMG_GetError());
