@@ -40,7 +40,20 @@ public:
     void TakeDamage(int damage);        // Phương thức để nhận sát thương
     void takeHit();                     // Phương thức cũ để nhận đòn đánh
     bool isMarkedForDeletion() const { return markedForDeletion; }
-    void setPosition(const SDL_FPoint& pos) { position = pos; }
+    void setPosition(const SDL_FPoint& pos) {
+        position = pos;
+        // Căn chỉnh vị trí y để quái vật đứng trên mặt đất
+        int col = static_cast<int>(position.x / TILE_SIZE);
+        if (col >= 0 && col < MAP_WIDTH) {
+            int row = static_cast<int>((position.y - mFrameHeight) / TILE_SIZE);
+            while (row < MAP_HEIGHT && !is_solid(mMap[row][col])) {
+                row++;
+            }
+            if (row < MAP_HEIGHT) {
+                position.y = row * TILE_SIZE;
+            }
+        }
+    }
 
 private:
     SDL_Texture* m_idleTexture;

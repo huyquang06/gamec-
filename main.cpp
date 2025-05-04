@@ -31,8 +31,16 @@ int main(int argc, char* argv[]) {
         return 1;
     }
 
+    if(TTF_Init() == -1)
+    {
+        printf("SDL_ttf init failed: %s\n", TTF_GetError());
+        return 1;
+    }
+
     SDL_Window* window = SDL_CreateWindow("Platformer", SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, WINDOW_WIDTH, WINDOW_HEIGHT, SDL_WINDOW_SHOWN);
     SDL_Renderer* renderer = SDL_CreateRenderer(window, -1, SDL_RENDERER_ACCELERATED);
+
+    TTF_Font* font = TTF_OpenFont("font/pixel_font.otf", 18);
 
     // Load background and tile textures
     SDL_Texture* layer1 = IMG_LoadTexture(renderer, "image/background_layer_1.png");
@@ -40,6 +48,10 @@ int main(int argc, char* argv[]) {
     SDL_Texture* layer3 = IMG_LoadTexture(renderer, "image/background_layer_3.png");
     SDL_Texture* block1 = IMG_LoadTexture(renderer, "map/BLOCK_1.png");
     SDL_Texture* block2 = IMG_LoadTexture(renderer, "map/BLOCK_2.png");
+    SDL_Texture* heartTexture = IMG_LoadTexture(renderer, "image/HEART.png");
+
+    int heartWidth, heartHeight;
+    SDL_QueryTexture(heartTexture, NULL, NULL, &heartWidth, &heartHeight);
 
     // Initialize monsters
     SDL_Texture* m_idleTexture = IMG_LoadTexture(renderer, "image/IDLE_MONSTER.png");
@@ -58,6 +70,8 @@ int main(int argc, char* argv[]) {
     int frameWidth = textureWidth / WALKING_FRAMES;
     int frameHeight = textureHeight;
     Player player(renderer, 0.0f, getGroundLevel(0, frameWidth, frameHeight, true));
+
+    int monstersDefeated = 0;
 
     SDL_Rect camera = {0, 0, WINDOW_WIDTH, WINDOW_HEIGHT};
     bool running = true;
@@ -78,8 +92,11 @@ int main(int argc, char* argv[]) {
             monster.Update(player);
         }
 
+        size_t initialSize = monsters.size();
+
         monsters.erase(std::remove_if(monsters.begin(), monsters.end(),[](const Monster& monster){return monster.isMarkedForDeletion();}),
                        monsters.end());
+        monstersDefeated += initialSize - monsters.size();
 
         SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255);
         SDL_RenderClear(renderer);
@@ -120,6 +137,33 @@ int main(int argc, char* argv[]) {
         player.Render(renderer, camera);
         RenderMonsters(renderer, monsters, camera);
 
+        int maxLives = 3;
+        int remainingLives = maxLives - player.getRespawnCount();
+        for(int i = 0; i < remainingLives; i++)
+        {
+            SDL_Rect heartDst = { i * (heartWidth - 5), 10, heartWidth, heartHeight};
+            SDL_RenderCopy(renderer, heartTexture, NULL, &heartDst);
+        }
+
+        SDL_Color textColor = {255,255,255,255};
+        std::string pointText = "POINTS: " + std::to_string(monstersDefeated);
+        SDL_Surface* textSurface = TTF_RenderText_Solid(font, pointText.c_str(), textColor);
+        if (!textSurface) {
+            printf("Failed to render text surface: %s\n", TTF_GetError());
+        } else {
+            SDL_Texture* textTexture = SDL_CreateTextureFromSurface(renderer, textSurface);
+            if (!textTexture) {
+                printf("Failed to create text texture: %s\n", SDL_GetError());
+            } else {
+                int textWidth = textSurface->w;
+                int textHeight = textSurface->h;
+                SDL_Rect textDst = {20 , heartHeight, textWidth, textHeight};
+                SDL_RenderCopy(renderer, textTexture, NULL, &textDst);
+                SDL_DestroyTexture(textTexture);
+            }
+            SDL_FreeSurface(textSurface);
+        }
+
         SDL_RenderPresent(renderer);
 
         Uint32 frameTime = SDL_GetTicks() - frameStart;
@@ -127,6 +171,8 @@ int main(int argc, char* argv[]) {
     }
 
     // Cleanup
+    TTF_CloseFont(font);
+    TTF_Quit();
     SDL_DestroyTexture(layer1);
     SDL_DestroyTexture(layer2);
     SDL_DestroyTexture(layer3);
@@ -135,6 +181,7 @@ int main(int argc, char* argv[]) {
     SDL_DestroyTexture(walkRTexture);
     SDL_DestroyTexture(m_idleTexture);
     SDL_DestroyTexture(m_attackTexture);
+    SDL_DestroyTexture(heartTexture);
     SDL_DestroyRenderer(renderer);
     SDL_DestroyWindow(window);
     SDL_Quit();
