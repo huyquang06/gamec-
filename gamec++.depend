@@ -1,38 +1,40 @@
 # depslib dependency file v1.0
-1746381047 source:c:\sdl\laptrinhcodeblock\gamec++\main.cpp
+1746458525 source:c:\sdl\laptrinhcodeblock\gamec++\main.cpp
 	"CommonFunc.h"
 	"Monster.h"
 	"Player.h"
-	<vector>
-	<algorithm>
+	"Timer.h"
+	"GameSound.h"
 
-1746380511 c:\sdl\laptrinhcodeblock\gamec++\commonfunc.h
+1746452048 c:\sdl\laptrinhcodeblock\gamec++\commonfunc.h
 	<iostream>
 	<SDL.h>
 	<SDL_image.h>
 	<SDL_ttf.h>
+	<SDL_mixer.h>
 	<fstream>
 	<sstream>
 	<cmath>
+	<vector>
+	<algorithm>
+	<string>
 
-1746373749 source:c:\sdl\laptrinhcodeblock\gamec++\monster.cpp
+1746457277 source:c:\sdl\laptrinhcodeblock\gamec++\monster.cpp
 	"Monster.h"
 	"CommonFunc.h"
 	"Player.h"
 	"Bullet.h"
 
-1746379310 c:\sdl\laptrinhcodeblock\gamec++\monster.h
-	"CommonFunc.h"
-	<vector>
-	<string>
-
-1745518315 source:c:\sdl\laptrinhcodeblock\gamec++\commonfunc.cpp
+1746452048 c:\sdl\laptrinhcodeblock\gamec++\monster.h
 	"CommonFunc.h"
 
-1746349606 source:c:\sdl\laptrinhcodeblock\gamec++\player.cpp
+1746457277 source:c:\sdl\laptrinhcodeblock\gamec++\commonfunc.cpp
+	"CommonFunc.h"
+
+1746450923 source:c:\sdl\laptrinhcodeblock\gamec++\player.cpp
 	"Player.h"
 
-1746371160 c:\sdl\laptrinhcodeblock\gamec++\player.h
+1746435105 c:\sdl\laptrinhcodeblock\gamec++\player.h
 	"CommonFunc.h"
 	"Monster.h"
 	"Bullet.h"
@@ -49,5 +51,18 @@
 	"Bullet.h"
 
 1746349149 c:\sdl\laptrinhcodeblock\gamec++\bullet.h
+	"CommonFunc.h"
+
+1746446049 c:\sdl\laptrinhcodeblock\gamec++\timer.h
+	"CommonFunc.h"
+
+1746446049 source:c:\sdl\laptrinhcodeblock\gamec++\timer.cpp
+	"Timer.h"
+
+1746458220 source:c:\sdl\laptrinhcodeblock\gamec++\gamesound.cpp
+	"gamesound.h"
+	"CommonFunc.h"
+
+1746452049 c:\sdl\laptrinhcodeblock\gamec++\gamesound.h
 	"CommonFunc.h"
 

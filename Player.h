@@ -6,7 +6,6 @@
 #include "Bullet.h"
 #include <vector>
 
-class Arrow;
 class Player
 {
     public:
@@ -52,7 +51,6 @@ private:
     bool gameOver;
     bool hasShot;
 
-
     Uint32 frameTimer;
     CharacterState currentState;
 
@@ -72,6 +70,9 @@ private:
     Uint32 invincibilityTimer;
     Uint32 invincibilityDuration;
 
+    int bulletCount;
+    Uint32 lastShortTime;
+    bool inCooldown;
 
 private:
     void updateAnimation();

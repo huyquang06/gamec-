@@ -2,7 +2,7 @@
 
 bool is_solid(int tileID)
 {
-    return tileID == 1 || tileID == 2;
+    return tileID == 1 || tileID == 3;
 }
 
 float getGroundLevel(float charX, float charWidth, int frameHeight, bool adjustForHeight)

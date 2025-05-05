@@ -34,7 +34,7 @@ void Fireball::Update(const int map[MAP_HEIGHT][MAP_WIDTH])
 
     if(row >= 0 && row < MAP_HEIGHT && col >= 0 && col < MAP_WIDTH)
     {
-        if(map[row][col] == 1 || map[row][col] == 2)
+        if(map[row][col] == 1 || map[row][col] == 3)
         {
             x = -1000;
         }
@@ -124,35 +124,39 @@ void Monster::TakeDamage(int damage)
 
 void Monster::Update(const Player& player)
 {
-    if(mState == State::HURT || mState == State::DEATH)
+    for(auto it = fireballs.begin(); it != fireballs.end();)
     {
-        for(auto it = fireballs.begin(); it != fireballs.end();)
+    it->Update(mMap);
+    SDL_Rect fireballBox = it->GetBoundingBox();
+    SDL_Rect playerBox = player.GetBoundingBox();
+
+    if (monsterCollision(fireballBox, playerBox))
+    {
+        if (!player.isInvincible())
         {
-            it->Update(mMap);
-            SDL_Rect fireballBox = it->GetBoundingBox();
-            SDL_Rect playerBox = player.GetBoundingBox();
-            if (monsterCollision(fireballBox, playerBox))
-            {
-                if (!player.isInvincible())
-                {
-                    const_cast<Player&>(player).IncreaseRespawnCount();
-                    const_cast<Player&>(player).Respawn();
-                }
-                it = fireballs.erase(it);
-            }
-            else if(it->isOutOfBounds())
-            {
-                it = fireballs.erase(it);
-            }
-            else
-            {
-                ++it;
-            }
+            const_cast<Player&>(player).IncreaseRespawnCount();
+            const_cast<Player&>(player).Respawn();
         }
-        return;
+        it = fireballs.erase(it);
+    }
+    else if(it->isOutOfBounds())
+    {
+        it = fireballs.erase(it);
+    }
+    else
+    {
+        ++it;
+    }
     }
 
+
+    if(mState == State::HURT || mState == State::DEATH)  {return;}
+
     SDL_Rect monsterBox = GetBoundingBox();
+     float groundY = getGroundLevel(position.x, mFrameWidth, mFrameHeight, false);
+    if (position.y < groundY) {
+        position.y = groundY;
+    }
 
     if (player.getState() == Player::ATTACK_RIGHT || player.getState() == Player::ATTACK_LEFT)
     {

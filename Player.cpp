@@ -18,6 +18,10 @@ Player::Player(SDL_Renderer* renderer, float start_x, float start_y)
     respawnCount = 0;
     gameOver = false;
 
+    lastShortTime = 0;
+    inCooldown  = 0;
+    bulletCount = 0;
+
     walkRTexture = IMG_LoadTexture(renderer, "image/RUN.png");
     walkLTexture = IMG_LoadTexture(renderer, "image/RUN_NGUOC.png");
     idleLTexture = IMG_LoadTexture(renderer, "image/IDLE_LEFT.png");
@@ -90,12 +94,19 @@ void Player::handleInput(SDL_Event& event)
         if (event.key.keysym.sym == SDLK_a) moveLeft = false;
         if (event.key.keysym.sym == SDLK_d) moveRight = false;
     }
-    if (event.type == SDL_MOUSEBUTTONDOWN && event.button.button == SDL_BUTTON_LEFT)
+    if (event.type == SDL_MOUSEBUTTONDOWN && event.button.button == SDL_BUTTON_RIGHT)
     {
         currentState = facingRight ? ATTACK_RIGHT : ATTACK_LEFT;
-        float bulletY = y + frameHeight / 5;
-        float velocityX = facingRight ? 2.0f : -2.0f;
-        bullets.emplace_back(renderer, x + (facingRight ? frameWidth / 2 : -frameWidth /2 ), bulletY, velocityX);
+
+        if(bulletCount < 3 && !inCooldown)
+        {
+            float bulletY = y + frameHeight / 5;
+            float velocityX = facingRight ? 2.0f : -2.0f;
+            bullets.emplace_back(renderer, x + (facingRight ? frameWidth / 2 : -frameWidth /2 ), bulletY, velocityX);
+            bulletCount++;
+            lastShortTime = SDL_GetTicks();
+        }
+
     }
 }
 
@@ -204,6 +215,19 @@ void Player::updateAnimation()
 
 void Player::Update(SDL_Rect& camera, std::vector<Monster>& monsters)
 {
+    if(bulletCount >= 3 && !inCooldown)
+    {
+        inCooldown = true;
+    }
+    if(inCooldown )
+    {
+        Uint32 currentTime = SDL_GetTicks();
+        if(currentTime - lastShortTime >= 3000)
+        {
+            bulletCount = 0;
+            inCooldown = false;
+        }
+    }
     if(currentState != ATTACK_LEFT && currentState != ATTACK_RIGHT )
     {
         if (isJumping)

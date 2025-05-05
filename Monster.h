@@ -2,8 +2,6 @@
 #define MONSTER_H
 
 #include "CommonFunc.h"
-#include <vector>
-#include <string>
 
 class Player;
 class Bullet; // Forward declaration cho Bullet

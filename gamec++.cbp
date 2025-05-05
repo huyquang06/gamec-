@@ -31,6 +31,10 @@
 		<Compiler>
 			<Add option="-Wall" />
 		</Compiler>
+		<Linker>
+			<Add library="SDL2_ttf" />
+			<Add directory="../../SDL2_ttf-devel-2.20.0-mingw/SDL2_ttf-2.20.0/x86_64-w64-mingw32/lib" />
+		</Linker>
 		<Unit filename="Bullet.cpp" />
 		<Unit filename="Bullet.h" />
 		<Unit filename="CommonFunc.cpp" />
