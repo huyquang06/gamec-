@@ -5,7 +5,7 @@ bool is_solid(int tileID)
     return tileID == 1 || tileID == 3;
 }
 
-float getGroundLevel(float charX, float charWidth, int frameHeight, bool adjustForHeight)
+float getGroundLevel(float charX, float charWidth, int frameHeight, bool adjustForHeight, const int tileMap[MAP_HEIGHT][MAP_WIDTH])
 {
     int col = static_cast<int>((charX + charWidth / 2) / TILE_SIZE);
     if (col < 0 || col >= MAP_WIDTH)

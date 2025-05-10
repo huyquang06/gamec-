@@ -32,26 +32,22 @@ public:
     Monster(SDL_Texture* idleTexture, SDL_Texture* idleLeftTexture, SDL_Texture* attackTexture, SDL_Texture* attackLeftTexture,
             int idleCount, int attackCount, SDL_Renderer* renderer, const int map[MAP_HEIGHT][MAP_WIDTH]);
 
-    void Update(const Player& player);  // Trạng thái monster
+    void Update( Player& player);  // Trạng thái monster
     void Render(SDL_Renderer* renderer, SDL_Rect& camera);
     SDL_Rect GetBoundingBox() const;
     void TakeDamage(int damage);        // Phương thức để nhận sát thương
     void takeHit();                     // Phương thức cũ để nhận đòn đánh
     bool isMarkedForDeletion() const { return markedForDeletion; }
-    void setPosition(const SDL_FPoint& pos) {
+    void setPosition(const SDL_FPoint& pos)
+    {
         position = pos;
-        // Căn chỉnh vị trí y để quái vật đứng trên mặt đất
-        int col = static_cast<int>(position.x / TILE_SIZE);
-        if (col >= 0 && col < MAP_WIDTH) {
-            int row = static_cast<int>((position.y - mFrameHeight) / TILE_SIZE);
-            while (row < MAP_HEIGHT && !is_solid(mMap[row][col])) {
-                row++;
-            }
-            if (row < MAP_HEIGHT) {
-                position.y = row * TILE_SIZE;
-            }
-        }
     }
+    int getFrameWidth() const { return mFrameWidth; }
+    int getFrameHeight() const { return mFrameHeight; }
+
+    void setY(float y) { position.y = y; }
+    float getX() const { return position.x; }
+    float getY() const { return position.y; }
 
 private:
     SDL_Texture* m_idleTexture;
@@ -88,7 +84,7 @@ private:
     bool facingRight;
 };
 
-std::vector<SDL_FPoint> Generate_Monsters(int count, int min_x, int max_x, int max_map_x, int width, int height);
+std::vector<SDL_FPoint> Generate_Monsters(int count, int min_x, int max_x, int max_map_x, int width, int height, const int tileMap[MAP_HEIGHT][MAP_WIDTH]);
 
 std::vector<Monster> InitMonsters(
     SDL_Renderer* renderer,

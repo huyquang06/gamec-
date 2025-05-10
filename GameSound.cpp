@@ -2,9 +2,11 @@
 #include "CommonFunc.h"
 
 GameSound::GameSound(const std::string& musicPath) : backgroundMusic(nullptr) {
+    if(init()){
     backgroundMusic = Mix_LoadMUS(musicPath.c_str());
     if (!backgroundMusic) {
         printf("Failed to load background music: %s\n", Mix_GetError());
+    }
     }
 }
 
@@ -19,9 +21,15 @@ GameSound::~GameSound() {
 }
 
 bool GameSound::init() {
-    // Không cần Mix_Init cho WAV vì SDL_mixer hỗ trợ WAV mặc định
+    int flags = MIX_INIT_MP3;
+    int initted = Mix_Init(flags);
+    if ((initted & flags) != flags) {
+        printf("Mix_Init thất bại (mp3): %s\n", Mix_GetError());
+        return false;
+    }
+
     if (Mix_OpenAudio(44100, MIX_DEFAULT_FORMAT, 2, 2048) < 0) {
-        printf("Mix_OpenAudio failed: %s\n", Mix_GetError());
+        printf("Mix_OpenAudio thất bại: %s\n", Mix_GetError());
         return false;
     }
 

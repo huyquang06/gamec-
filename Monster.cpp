@@ -122,7 +122,7 @@ void Monster::TakeDamage(int damage)
     }
 }
 
-void Monster::Update(const Player& player)
+void Monster::Update( Player& player)
 {
     for(auto it = fireballs.begin(); it != fireballs.end();)
     {
@@ -153,7 +153,7 @@ void Monster::Update(const Player& player)
     if(mState == State::HURT || mState == State::DEATH)  {return;}
 
     SDL_Rect monsterBox = GetBoundingBox();
-     float groundY = getGroundLevel(position.x, mFrameWidth, mFrameHeight, false);
+    float groundY = getGroundLevel(position.x, mFrameWidth, mFrameHeight, false, mMap);
     if (position.y < groundY) {
         position.y = groundY;
     }
@@ -320,7 +320,7 @@ SDL_Rect Monster::GetBoundingBox() const
     return {(int)position.x + offsetX, (int)(position.y - mFrameHeight) + offsetY, mFrameWidth - shrinkW, mFrameHeight - shrinkH};
 }
 
-std::vector<SDL_FPoint> Generate_Monsters(int count, int min_x, int max_x, int max_map_x, int width, int height) {
+std::vector<SDL_FPoint> Generate_Monsters(int count, int min_x, int max_x, int max_map_x, int width, int height, const int tileMap[MAP_HEIGHT][MAP_WIDTH]) {
     std::vector<SDL_FPoint> positions;
 
     int numZones = 5;
@@ -340,7 +340,7 @@ std::vector<SDL_FPoint> Generate_Monsters(int count, int min_x, int max_x, int m
             attempts++;
 
             float x = zoneStart + rand() % (zoneEnd - zoneStart);
-            float y = getGroundLevel(x, width, height, false);
+            float y = getGroundLevel(x, width, height, true, tileMap);
 
             bool tooClose = false;
             for (const auto& pos : positions)

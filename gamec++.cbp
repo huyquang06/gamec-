@@ -33,16 +33,22 @@
 		</Compiler>
 		<Linker>
 			<Add library="SDL2_ttf" />
+			<Add library="SDL2_mixer" />
 			<Add directory="../../SDL2_ttf-devel-2.20.0-mingw/SDL2_ttf-2.20.0/x86_64-w64-mingw32/lib" />
+			<Add directory="../../SDL2_mixer-devel-2.8.0-mingw/SDL2_mixer-2.8.0/x86_64-w64-mingw32/lib" />
 		</Linker>
 		<Unit filename="Bullet.cpp" />
 		<Unit filename="Bullet.h" />
 		<Unit filename="CommonFunc.cpp" />
 		<Unit filename="CommonFunc.h" />
+		<Unit filename="GameSound.cpp" />
+		<Unit filename="GameSound.h" />
 		<Unit filename="Monster.cpp" />
 		<Unit filename="Monster.h" />
 		<Unit filename="Player.cpp" />
 		<Unit filename="Player.h" />
+		<Unit filename="Timer.cpp" />
+		<Unit filename="Timer.h" />
 		<Unit filename="main.cpp" />
 		<Extensions>
 			<lib_finder disable_auto="1" />

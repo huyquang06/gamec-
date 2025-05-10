@@ -277,7 +277,7 @@ void Player::Update(SDL_Rect& camera, std::vector<Monster>& monsters)
             return;
         }
         x = 0.0f;
-        y = getGroundLevel(x, frameWidth, frameHeight, true);
+        y = getGroundLevel(x, frameWidth, frameHeight, true, tileMap);
         velocity = 0;
         isJumping = false;
     }
@@ -396,7 +396,7 @@ void Player::IncreaseRespawnCount()
     else
     {
         x = 0.0f;
-        y = getGroundLevel(x, frameWidth, frameHeight, true);
+        y = getGroundLevel(x, frameWidth, frameHeight, true, tileMap);
         velocity = 0;
         isJumping = false;
     }
@@ -405,7 +405,7 @@ void Player::IncreaseRespawnCount()
 void Player::Respawn()
 {
     x = find_RespawnPoint();
-    y = getGroundLevel(x, frameWidth, frameHeight, true);
+    y = getGroundLevel(x, frameWidth, frameHeight, true, tileMap);
     velocity = 0;
     isJumping = false;
     currentState = facingRight ? IDLE_RIGHT : IDLE_LEFT;

@@ -38,7 +38,7 @@ int main(int argc, char* argv[]) {
     }
 
     // gamesound
-    GameSound background_music ("sound/background_sound.wav");
+    GameSound background_music ("sound/background_sound.mp3");
     background_music.playMusic();
 
     SDL_Window* window = SDL_CreateWindow("Platformer", SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, WINDOW_WIDTH, WINDOW_HEIGHT, SDL_WINDOW_SHOWN);
@@ -85,7 +85,7 @@ int main(int argc, char* argv[]) {
     SDL_QueryTexture(m_idleTexture, NULL, NULL, &m_idleWidth, &m_idleHeight);
     int m_width = m_idleWidth / 4;
     int m_height = m_idleHeight;
-    std::vector<SDL_FPoint> m_positions = Generate_Monsters(20, 300, 900, MAP_WIDTH * TILE_SIZE, m_width, m_height);
+    std::vector<SDL_FPoint> m_positions = Generate_Monsters(20, 300, 900, MAP_WIDTH * TILE_SIZE, m_width, m_height, tileMap);
     std::vector<Monster> monsters = InitMonsters(renderer, "image/IDLE_MONSTER_RIGHT.png", "image/IDLE_MONSTER.png", "image/ATTACK_RIGHT.png", "image/ATTACK.png", 4, 7, m_positions, tileMap);
 
     // player
@@ -94,7 +94,7 @@ int main(int argc, char* argv[]) {
     SDL_QueryTexture(walkRTexture, NULL, NULL, &textureWidth, &textureHeight);
     int frameWidth = textureWidth / WALKING_FRAMES;
     int frameHeight = textureHeight;
-    Player player(renderer, 0.0f, getGroundLevel(0, frameWidth, frameHeight, true));
+    Player player(renderer, 0.0f, getGroundLevel(0, frameWidth, frameHeight, true, tileMap));
 
     int monstersDefeated = 0;
 
@@ -106,12 +106,12 @@ int main(int argc, char* argv[]) {
     SDL_Event event;
 
     Timer gameTimer;
-    if(isStarted)   gameTimer.start();  // bat dua dem thoi gian khi game khoi dong
 
     while (running) {
         Uint32 frameStart = SDL_GetTicks();
 
-        while (SDL_PollEvent(&event)) {
+        while (SDL_PollEvent(&event))
+        {
             if (event.type == SDL_QUIT) running = false;
             if (event.type == SDL_MOUSEBUTTONDOWN && event.button.button == SDL_BUTTON_LEFT) {
                 int mouseX = event.button.x;
@@ -134,15 +134,37 @@ int main(int argc, char* argv[]) {
              if (gameOver) {
                 if (event.type == SDL_KEYDOWN) {
                     if (event.key.keysym.sym == SDLK_RETURN) { // Nhấn Enter để khởi động lại
-                        isStarted = false;
+                        isStarted = true;
                         gameOver = false;
+
                         LoadTile("map/mapgame.dat", tileMap);
+
                         camera = {0, 0, WINDOW_WIDTH, WINDOW_HEIGHT};
-                        player = Player(renderer, 0.0f, getGroundLevel(0, frameWidth, frameHeight, true));
+
+            if (frameWidth <= 0 || frameHeight <= 0)
+            {
+                std::cerr << "Invalid frameWidth or frameHeight: " << frameWidth << ", " << frameHeight << "\n";
+                frameWidth = 64;
+                frameHeight = 64;
+            }
+                        float start_y = getGroundLevel(0, frameWidth, frameHeight, true, tileMap);
+                        std::cout << "Player start_y: " << start_y << "\n";
+                        player = Player(renderer, 0.0f, start_y);
+                        player.setInvincibility(2000);
+
+                        monsters.clear();
+
+                        player.Render(renderer, camera);
+                        SDL_RenderPresent(renderer);
+
+                        m_positions = Generate_Monsters(20, 300, 900, MAP_WIDTH * TILE_SIZE, m_width, m_height, tileMap);
                         monsters = InitMonsters(renderer, "image/IDLE_MONSTER_RIGHT.png", "image/IDLE_MONSTER.png", "image/ATTACK_RIGHT.png", "image/ATTACK.png", 4, 7, m_positions, tileMap);
                         monstersDefeated = 0;
                         gameTimer.start();
-                    } else if (event.key.keysym.sym == SDLK_ESCAPE) { // Nhấn ESC để thoát
+
+                    }
+                    else if (event.key.keysym.sym == SDLK_ESCAPE)
+                    {
                         running = false;
                     }
                 }
@@ -152,13 +174,13 @@ int main(int argc, char* argv[]) {
             }
         }
 
-        if (isStarted && !gameOver) {
+        if (isStarted && !gameOver)
+        {
             if (!isPaused) {
                 player.Update(camera, monsters);
 
                 for (auto& monster : monsters) {
                     monster.Update(player);
-
                 }
 
                 size_t initialSize = monsters.size();
@@ -171,9 +193,13 @@ int main(int argc, char* argv[]) {
                 gameOver = true;
                 gameTimer.pause();
             }
+        }
 
         SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255);
         SDL_RenderClear(renderer);
+
+        if(isStarted && !gameOver)
+        {
 
         // Draw backgrounds (parallax)
         int bg1_width, bg1_height, bg2_width, bg2_height, bg3_width, bg3_height;
@@ -243,7 +269,6 @@ int main(int argc, char* argv[]) {
             SDL_FreeSurface(textSurface);
         }
 
-
         // hien thi seconds
         Uint32 timeElapsed = gameTimer.getTicks();
         Uint32 seconds = timeElapsed / 1000;  // millisecond to second
@@ -303,7 +328,7 @@ int main(int argc, char* argv[]) {
             }
         }
 
-            else
+        else
         {
             SDL_SetRenderDrawColor(renderer, 255,255,255,255);
             SDL_RenderClear(renderer);
@@ -324,6 +349,7 @@ int main(int argc, char* argv[]) {
 
         SDL_RenderCopy(renderer, startTexture, NULL, &startRect);
         }
+
         SDL_RenderPresent(renderer);
 
         Uint32 frameTime = SDL_GetTicks() - frameStart;

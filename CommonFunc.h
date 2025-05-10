@@ -32,7 +32,7 @@ const int TILESET_COLS = 2;
 
 const float COLLISION_MARGIN = 0.0f;
 
-float getGroundLevel(float charX, float charWidth, int frameHeight, bool adjustForHeight = true);
+float getGroundLevel(float charX, float charWidth, int frameHeight, bool adjustForHeight, const int tileMap[MAP_HEIGHT][MAP_WIDTH]);
 bool is_solid(int tileID);
 extern int tileMap[MAP_HEIGHT][MAP_WIDTH];
 
