@@ -13,11 +13,11 @@ float getGroundLevel(float charX, float charWidth, int frameHeight, bool adjustF
         return adjustForHeight ? WINDOW_HEIGHT - frameHeight : WINDOW_HEIGHT;
     }
 
-    for (int row = 0; row < MAP_HEIGHT; ++row)
+    for (int row = 0; row < MAP_HEIGHT - 1; ++row)
     {
-        if (is_solid(tileMap[row][col]))
+        if (tileMap[row][col] == 0 && is_solid(tileMap[row + 1][col]))
         {
-            float groundY = row * TILE_SIZE;
+            float groundY = (row + 1) * TILE_SIZE;
             return adjustForHeight ? groundY - frameHeight : groundY;
         }
     }

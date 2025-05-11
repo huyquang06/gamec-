@@ -12,6 +12,7 @@ public:
 
 private:
     Mix_Music* backgroundMusic;
+
 };
 
 

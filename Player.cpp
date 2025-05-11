@@ -392,6 +392,7 @@ void Player::IncreaseRespawnCount()
     if(respawnCount >= 3)
     {
         gameOver = true;
+
     }
     else
     {

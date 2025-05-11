@@ -1,5 +1,5 @@
 # depslib dependency file v1.0
-1746904035 source:c:\sdl\laptrinhcodeblock\gamec++\main.cpp
+1746935614 source:c:\sdl\laptrinhcodeblock\gamec++\main.cpp
 	"CommonFunc.h"
 	"Monster.h"
 	"Player.h"
@@ -19,7 +19,7 @@
 	<algorithm>
 	<string>
 
-1746903207 source:c:\sdl\laptrinhcodeblock\gamec++\monster.cpp
+1746952617 source:c:\sdl\laptrinhcodeblock\gamec++\monster.cpp
 	"Monster.h"
 	"CommonFunc.h"
 	"Player.h"
@@ -28,10 +28,10 @@
 1746898171 c:\sdl\laptrinhcodeblock\gamec++\monster.h
 	"CommonFunc.h"
 
-1746903000 source:c:\sdl\laptrinhcodeblock\gamec++\commonfunc.cpp
+1746951941 source:c:\sdl\laptrinhcodeblock\gamec++\commonfunc.cpp
 	"CommonFunc.h"
 
-1746902477 source:c:\sdl\laptrinhcodeblock\gamec++\player.cpp
+1746935668 source:c:\sdl\laptrinhcodeblock\gamec++\player.cpp
 	"Player.h"
 
 1746435105 c:\sdl\laptrinhcodeblock\gamec++\player.h
@@ -59,10 +59,10 @@
 1746446049 source:c:\sdl\laptrinhcodeblock\gamec++\timer.cpp
 	"Timer.h"
 
-1746495734 source:c:\sdl\laptrinhcodeblock\gamec++\gamesound.cpp
+1746935660 source:c:\sdl\laptrinhcodeblock\gamec++\gamesound.cpp
 	"gamesound.h"
 	"CommonFunc.h"
 
-1746452049 c:\sdl\laptrinhcodeblock\gamec++\gamesound.h
+1746935614 c:\sdl\laptrinhcodeblock\gamec++\gamesound.h
 	"CommonFunc.h"
 

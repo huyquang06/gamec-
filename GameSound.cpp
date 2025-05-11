@@ -47,3 +47,4 @@ void GameSound::stopMusic() {
         Mix_HaltMusic();
     }
 }
+

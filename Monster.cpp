@@ -327,7 +327,7 @@ std::vector<SDL_FPoint> Generate_Monsters(int count, int min_x, int max_x, int m
     int monstersPerZone = count / numZones;
     const int minDistance = 300;
 
-    int zoneWidth = (max_map_x - 280) / numZones;
+    int zoneWidth = (max_map_x - 300) / numZones;
 
     for (int zone = 0; zone < numZones; ++zone) {
         int zoneStart = zone * zoneWidth;
@@ -340,7 +340,34 @@ std::vector<SDL_FPoint> Generate_Monsters(int count, int min_x, int max_x, int m
             attempts++;
 
             float x = zoneStart + rand() % (zoneEnd - zoneStart);
-            float y = getGroundLevel(x, width, height, true, tileMap);
+
+            x = std::max(0.0f, std::min(x, (float)(MAP_WIDTH * TILE_SIZE - width)));
+
+            int col = static_cast<int>(x / TILE_SIZE);
+
+            int surfaceRow = -1;
+            for (int row = 0; row < MAP_HEIGHT - 1; row++) {
+                if (tileMap[row][col] == 0 && is_solid(tileMap[row + 1][col])) {
+                    surfaceRow = row;
+                    break;
+                }
+            }
+            if (surfaceRow == -1) continue;
+
+            int flatSurfaceWidth = 0;
+            for (int checkCol = col; checkCol < std::min(MAP_WIDTH, col + 3); checkCol++) {
+                if (surfaceRow < MAP_HEIGHT - 1 &&
+                    tileMap[surfaceRow][checkCol] == 0 &&
+                    is_solid(tileMap[surfaceRow + 1][checkCol])) {
+                    flatSurfaceWidth++;
+                } else {
+                    break;
+                }
+            }
+
+            if (flatSurfaceWidth < 2) continue;
+
+            float y = (surfaceRow + 1) * TILE_SIZE;
 
             bool tooClose = false;
             for (const auto& pos : positions)

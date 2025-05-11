@@ -41,6 +41,8 @@ int main(int argc, char* argv[]) {
     GameSound background_music ("sound/background_sound.mp3");
     background_music.playMusic();
 
+
+
     SDL_Window* window = SDL_CreateWindow("Platformer", SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, WINDOW_WIDTH, WINDOW_HEIGHT, SDL_WINDOW_SHOWN);
     SDL_Renderer* renderer = SDL_CreateRenderer(window, -1, SDL_RENDERER_ACCELERATED);
 
@@ -133,37 +135,7 @@ int main(int argc, char* argv[]) {
             }
              if (gameOver) {
                 if (event.type == SDL_KEYDOWN) {
-                    if (event.key.keysym.sym == SDLK_RETURN) { // Nhấn Enter để khởi động lại
-                        isStarted = true;
-                        gameOver = false;
-
-                        LoadTile("map/mapgame.dat", tileMap);
-
-                        camera = {0, 0, WINDOW_WIDTH, WINDOW_HEIGHT};
-
-            if (frameWidth <= 0 || frameHeight <= 0)
-            {
-                std::cerr << "Invalid frameWidth or frameHeight: " << frameWidth << ", " << frameHeight << "\n";
-                frameWidth = 64;
-                frameHeight = 64;
-            }
-                        float start_y = getGroundLevel(0, frameWidth, frameHeight, true, tileMap);
-                        std::cout << "Player start_y: " << start_y << "\n";
-                        player = Player(renderer, 0.0f, start_y);
-                        player.setInvincibility(2000);
-
-                        monsters.clear();
-
-                        player.Render(renderer, camera);
-                        SDL_RenderPresent(renderer);
-
-                        m_positions = Generate_Monsters(20, 300, 900, MAP_WIDTH * TILE_SIZE, m_width, m_height, tileMap);
-                        monsters = InitMonsters(renderer, "image/IDLE_MONSTER_RIGHT.png", "image/IDLE_MONSTER.png", "image/ATTACK_RIGHT.png", "image/ATTACK.png", 4, 7, m_positions, tileMap);
-                        monstersDefeated = 0;
-                        gameTimer.start();
-
-                    }
-                    else if (event.key.keysym.sym == SDLK_ESCAPE)
+                    if (event.key.keysym.sym == SDLK_ESCAPE)
                     {
                         running = false;
                     }
@@ -297,34 +269,20 @@ int main(int argc, char* argv[]) {
 
             SDL_RenderCopy(renderer, gameOverTexture, NULL, &gameOverRect);
 
-            SDL_Color restartColor = {255,53,53,255};
-            SDL_Surface* restartSurface = TTF_RenderText_Solid(font, "Press Enter to restart game", restartColor);
-            if (restartSurface)
+            SDL_Color exitColor = {255,53,53,255};
+            SDL_Surface* exitSurface = TTF_RenderText_Solid(font, "Press ESC to exit game", exitColor);
+            if(exitSurface)
             {
-                SDL_Texture* restartTexture = SDL_CreateTextureFromSurface(renderer, restartSurface);
-                if (restartTexture) {
-                    int restartWidth = restartSurface->w;
-                    int restartHeight = restartSurface->h;
-                    SDL_Rect restartRect = {(WINDOW_WIDTH - restartWidth) / 2, gameOverRect.y + gameOverRect.h + 20, restartWidth, restartHeight};
-                    SDL_RenderCopy(renderer, restartTexture, NULL, &restartRect);
-                    SDL_DestroyTexture(restartTexture);
-                }
-                SDL_FreeSurface(restartSurface);
-            }
-
-            SDL_Surface* endSurface = TTF_RenderText_Solid(font, "Press ESC to end game", restartColor);
-            if (endSurface)
-            {
-                SDL_Texture* endTexture = SDL_CreateTextureFromSurface(renderer, endSurface);
-                if (endTexture)
+                SDL_Texture* exitTexture = SDL_CreateTextureFromSurface(renderer, exitSurface);
+                if(exitTexture)
                 {
-                    int endWidth = endSurface->w;
-                    int endHeight = endSurface->h;
-                    SDL_Rect endRect = {(WINDOW_WIDTH - endWidth) / 2, gameOverRect.y + gameOverRect.h + 20 + endHeight + 10, endWidth, endHeight};
-                    SDL_RenderCopy(renderer, endTexture, NULL, &endRect);
-                    SDL_DestroyTexture(endTexture);
+                    int exitWidth = exitSurface->w;
+                    int exitHeight = exitSurface->h;
+                    SDL_Rect exitRect = {(WINDOW_WIDTH - exitWidth) / 2, gameOverRect.y + gameOverRect.h + 20, exitWidth, exitHeight};
+                    SDL_RenderCopy(renderer, exitTexture, NULL, &exitRect);
+                    SDL_DestroyTexture(exitTexture);
                 }
-                SDL_FreeSurface(endSurface);
+                SDL_FreeSurface(exitSurface);
             }
         }
 
