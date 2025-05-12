@@ -52,7 +52,7 @@ SDL_Rect Fireball::GetBoundingBox() const
 {
     const int offsetX = 5;
     const int offsetY = 5;
-    const int shrinkW = 5; // Giảm shrink để tăng vùng va chạm
+    const int shrinkW = 5;
     const int shrinkH = 5;
     return {(int)x + offsetX, (int)y + offsetY, width - shrinkW, height - shrinkH};
 }
@@ -130,13 +130,12 @@ void Monster::Update( Player& player)
     SDL_Rect fireballBox = it->GetBoundingBox();
     SDL_Rect playerBox = player.GetBoundingBox();
 
+
     if (monsterCollision(fireballBox, playerBox))
     {
-        if (!player.isInvincible())
-        {
-            const_cast<Player&>(player).IncreaseRespawnCount();
-            const_cast<Player&>(player).Respawn();
-        }
+        const_cast<Player&>(player).IncreaseRespawnCount();
+        const_cast<Player&>(player).Respawn();
+
         it = fireballs.erase(it);
     }
     else if(it->isOutOfBounds())
@@ -173,7 +172,7 @@ void Monster::Update( Player& player)
     }
 
 
-    auto& bullets = const_cast<Player&>(player).getBulletsNonConst(); // Lấy tham chiếu không const
+    auto& bullets = const_cast<Player&>(player).getBulletsNonConst();
     auto bulletIt = bullets.begin();
     while (bulletIt != bullets.end())
     {
@@ -183,7 +182,7 @@ void Monster::Update( Player& player)
         if (monsterCollision(bulletBox, monsterBox))
         {
             TakeDamage(2);
-            bulletIt = bullets.erase(bulletIt); // Xóa Bullet sau khi va chạm với Monster
+            bulletIt = bullets.erase(bulletIt);
             bulletConsumed = true;
         }
 
@@ -196,7 +195,7 @@ void Monster::Update( Player& player)
                 if (monsterCollision(bulletBox, fireballBox))
                 {
                     fireballIt = fireballs.erase(fireballIt);
-                    bulletIt = bullets.erase(bulletIt); // Xóa Bullet sau khi va chạm với Fireball
+                    bulletIt = bullets.erase(bulletIt);
                     bulletConsumed = true;
                     break;
                 }
@@ -327,7 +326,7 @@ std::vector<SDL_FPoint> Generate_Monsters(int count, int min_x, int max_x, int m
     int monstersPerZone = count / numZones;
     const int minDistance = 300;
 
-    int zoneWidth = (max_map_x - 300) / numZones;
+    int zoneWidth = (max_map_x) / numZones;
 
     for (int zone = 0; zone < numZones; ++zone) {
         int zoneStart = zone * zoneWidth;

@@ -87,7 +87,7 @@ int main(int argc, char* argv[]) {
     SDL_QueryTexture(m_idleTexture, NULL, NULL, &m_idleWidth, &m_idleHeight);
     int m_width = m_idleWidth / 4;
     int m_height = m_idleHeight;
-    std::vector<SDL_FPoint> m_positions = Generate_Monsters(20, 300, 900, MAP_WIDTH * TILE_SIZE, m_width, m_height, tileMap);
+    std::vector<SDL_FPoint> m_positions = Generate_Monsters(25, 300, 900, MAP_WIDTH * TILE_SIZE, m_width, m_height, tileMap);
     std::vector<Monster> monsters = InitMonsters(renderer, "image/IDLE_MONSTER_RIGHT.png", "image/IDLE_MONSTER.png", "image/ATTACK_RIGHT.png", "image/ATTACK.png", 4, 7, m_positions, tileMap);
 
     // player
@@ -109,6 +109,10 @@ int main(int argc, char* argv[]) {
 
     Timer gameTimer;
 
+    SDL_Color whiteColor = {255, 255, 255, 255};
+    SDL_Color continueColor = {50, 255, 50, 255}; // Màu xanh lá
+    SDL_Color exitColor = {255, 50, 50, 255};     // Màu đỏ
+
     while (running) {
         Uint32 frameStart = SDL_GetTicks();
 
@@ -125,14 +129,22 @@ int main(int argc, char* argv[]) {
                 }
                 if (isStarted && mouseX >= pauseRect.x && mouseX <= pauseRect.x + pauseRect.w &&
                     mouseY >= pauseRect.y && mouseY <= pauseRect.y + pauseRect.h) {
-                    isPaused = !isPaused;
-                    if (isPaused) {
-                        gameTimer.pause();
-                    } else {
-                        gameTimer.unpause();
-                    }
+                    isPaused = true;
+                    gameTimer.pause();
+
                 }
             }
+
+            if (isStarted && isPaused && event.type == SDL_KEYDOWN) {
+                if (event.key.keysym.sym == SDLK_y) {
+                    isPaused = false;
+                    gameTimer.unpause();
+                }
+                else if (event.key.keysym.sym == SDLK_n) {
+                    running = false;
+                }
+            }
+
              if (gameOver) {
                 if (event.type == SDL_KEYDOWN) {
                     if (event.key.keysym.sym == SDLK_ESCAPE)
@@ -259,8 +271,61 @@ int main(int argc, char* argv[]) {
             }
             SDL_FreeSurface(timeSurface);
         }
+        if(!isPaused)
+        {
+            SDL_RenderCopy(renderer, pauseTexture, NULL, &pauseRect);
+        }
 
-        SDL_RenderCopy(renderer, pauseTexture, NULL, &pauseRect);
+        if(isPaused)
+        {
+            SDL_SetRenderDrawBlendMode(renderer, SDL_BLENDMODE_BLEND);
+            SDL_SetRenderDrawColor(renderer, 0, 0, 0, 180);
+            SDL_Rect fullScreen = {0, 0, WINDOW_WIDTH, WINDOW_HEIGHT};
+            SDL_RenderFillRect(renderer, &fullScreen);
+
+            // press y
+            SDL_Surface* continueSurface = TTF_RenderText_Solid(font, "PRESS Y TO CONTINUE", continueColor);
+            int continueWidth = 0, continueHeight = 0;
+            SDL_Texture* continueTexture = NULL;
+
+            if(continueSurface)
+            {
+                continueTexture = SDL_CreateTextureFromSurface(renderer, continueSurface);
+                continueWidth = continueSurface->w;
+                continueHeight = continueSurface->h;
+                SDL_FreeSurface(continueSurface);
+            }
+
+            SDL_Surface* endSurface = TTF_RenderText_Solid(font, "PRESS N TO EXIT GAME", exitColor);
+            int endWidth = 0, endHeight = 0;
+            SDL_Texture* endTexture = NULL;
+
+            if(endSurface)
+            {
+                endTexture = SDL_CreateTextureFromSurface(renderer, endSurface);
+                endWidth = endSurface->w;
+                endHeight = endSurface->h;
+                SDL_FreeSurface(endSurface);
+            }
+
+            int totalHeight = continueHeight + endHeight + 20;
+            int startY = (WINDOW_HEIGHT - totalHeight) / 2;
+
+            if(continueTexture)
+            {
+                SDL_Rect continueRect = {(WINDOW_WIDTH - continueWidth) / 2, startY, continueWidth, continueHeight};
+                SDL_RenderCopy(renderer, continueTexture, NULL, &continueRect);
+                SDL_DestroyTexture(continueTexture);
+            }
+
+            if(endTexture)
+            {
+                SDL_Rect endRect = {(WINDOW_WIDTH - endWidth) / 2, startY + continueHeight + 20, endWidth, endHeight};
+                SDL_RenderCopy(renderer, endTexture, NULL, &endRect);
+                SDL_DestroyTexture(endTexture);
+            }
+        }
+
         }
         else if(gameOver)
         {
@@ -270,7 +335,7 @@ int main(int argc, char* argv[]) {
             SDL_RenderCopy(renderer, gameOverTexture, NULL, &gameOverRect);
 
             SDL_Color exitColor = {255,53,53,255};
-            SDL_Surface* exitSurface = TTF_RenderText_Solid(font, "Press ESC to exit game", exitColor);
+            SDL_Surface* exitSurface = TTF_RenderText_Solid(font, "PRESS ESC TO EXIT GAME", exitColor);
             if(exitSurface)
             {
                 SDL_Texture* exitTexture = SDL_CreateTextureFromSurface(renderer, exitSurface);

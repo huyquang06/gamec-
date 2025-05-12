@@ -3,7 +3,7 @@
 Player::Player(SDL_Renderer* renderer, float start_x, float start_y)
 {
     x = start_x; y = start_y;
-    velocity = 0.0f; speed = 1.5f;
+    velocity = 0.0f; speed = 1.9f;
     gravity = 0.05f; jumpForce = 3.0f;
 
     moveLeft = false; moveRight = false;
@@ -315,7 +315,7 @@ void Player::Update(SDL_Rect& camera, std::vector<Monster>& monsters)
         for (auto& monster : monsters) {
             SDL_Rect monsterBox = monster.GetBoundingBox();
             if (SDL_HasIntersection(&attackBox, &monsterBox)) {
-                monster.TakeDamage(1);
+                monster.TakeDamage(2);
             }
         }
     }
